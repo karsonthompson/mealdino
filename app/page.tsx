@@ -31,7 +31,7 @@ export default function Home() {
 
         <div className="mb-12">
           <div className="flex justify-between items-center mb-8">
-            <h3 className="text-2xl font-semibold text-gray-900">Today's Recipes</h3>
+            <h3 className="text-2xl font-semibold text-gray-900">Today&apos;s Recipes</h3>
             <div className="flex space-x-4">
               <button className="px-4 py-2 text-sm font-medium text-green-600 bg-green-50 rounded-full hover:bg-green-100 transition-colors">
                 All

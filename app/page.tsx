@@ -1,4 +1,8 @@
-export default function Home() {
+import { auth } from '@/auth';
+import ButtonLogin from '@/components/ButtonLogin';
+
+export default async function Home() {
+  const session = await auth();
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
       <header className="bg-white shadow-sm border-b border-green-100">
@@ -8,11 +12,14 @@ export default function Home() {
               <h1 className="text-3xl font-bold text-green-600">MealDino</h1>
               <span className="ml-2 text-lg text-gray-600">🦕</span>
             </div>
-            <nav className="hidden md:flex space-x-8">
-              <a href="#" className="text-gray-600 hover:text-green-600 font-medium">Recipes</a>
-              <a href="#" className="text-gray-600 hover:text-green-600 font-medium">My Favorites</a>
-              <a href="#" className="text-gray-600 hover:text-green-600 font-medium">Meal Planner</a>
-            </nav>
+            <div className="flex items-center space-x-8">
+              <nav className="hidden md:flex space-x-8">
+                <a href="#" className="text-gray-600 hover:text-green-600 font-medium">Recipes</a>
+                <a href="#" className="text-gray-600 hover:text-green-600 font-medium">My Favorites</a>
+                <a href="#" className="text-gray-600 hover:text-green-600 font-medium">Meal Planner</a>
+              </nav>
+              <ButtonLogin session={session} />
+            </div>
           </div>
         </div>
       </header>

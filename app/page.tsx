@@ -1,5 +1,7 @@
-import { auth } from '@/auth';
-import ButtonLogin from '@/components/ButtonLogin';
+import { auth } from "@/auth";
+import ButtonLogin from "@/components/ButtonLogin";
+
+
 
 export default async function Home() {
   const session = await auth();

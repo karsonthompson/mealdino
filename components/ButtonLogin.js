@@ -8,7 +8,7 @@ const ButtonLogin = ({ session, extraStyle = "" }) => {
     return (
       <Link
         href="/dashboard"
-        className={`btn btn-primary ${extraStyle}`}
+        className={`px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition-colors font-medium ${extraStyle}`}
       >
         Welcome back {session.user.name || "friend"}
       </Link>
@@ -17,7 +17,7 @@ const ButtonLogin = ({ session, extraStyle = "" }) => {
 
   return (
     <button
-      className={`btn btn-primary ${extraStyle ? extraStyle : ""}`}
+      className={`px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition-colors font-medium ${extraStyle ? extraStyle : ""}`}
       onClick={() => {
         signIn(undefined, { callbackUrl: "/dashboard" });
       }}

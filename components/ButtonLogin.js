@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 
-const ButtonLogin = ({ session, extraStyle }) => {
+const ButtonLogin = ({ session, extraStyle = "" }) => {
   if (session) {
     return (
       <Link
         href="/dashboard"
-        className={`btn btn-primary ${extraStyle ? extraStyle : ""}`}
+        className={`btn btn-primary ${extraStyle}`}
       >
         Welcome back {session.user.name || "friend"}
       </Link>

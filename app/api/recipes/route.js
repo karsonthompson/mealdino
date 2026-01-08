@@ -1,11 +1,8 @@
-import dbConnect from '@/lib/mongodb';
-import Recipe from '@/models/Recipe';
+import { getAllRecipes } from '@/lib/recipes';
 
 export async function GET() {
   try {
-    await dbConnect();
-
-    const recipes = await Recipe.find({}).sort({ createdAt: -1 });
+    const recipes = await getAllRecipes();
 
     return Response.json({
       success: true,

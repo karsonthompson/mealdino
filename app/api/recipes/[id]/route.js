@@ -1,24 +1,10 @@
-import dbConnect from '@/lib/mongodb';
-import Recipe from '@/models/Recipe';
-import mongoose from 'mongoose';
+import { getRecipeById } from '@/lib/recipes';
 
 export async function GET(request, { params }) {
   try {
     const { id } = params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return Response.json(
-        {
-          success: false,
-          message: 'Invalid recipe ID format'
-        },
-        { status: 400 }
-      );
-    }
-
-    await dbConnect();
-
-    const recipe = await Recipe.findById(id);
+    const recipe = await getRecipeById(id);
 
     if (!recipe) {
       return Response.json(

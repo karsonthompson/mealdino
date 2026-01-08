@@ -1,27 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getRecipeById } from "@/lib/recipes";
 
-// Function to fetch a single recipe
-async function getRecipe(id: string) {
-  try {
-    const res = await fetch(`/api/recipes/${id}`, {
-      cache: 'no-store'
-    });
-
-    if (!res.ok) {
-      return null;
-    }
-
-    const data = await res.json();
-    return data.data;
-  } catch (error) {
-    console.error('Error loading recipe:', error);
-    return null;
-  }
-}
+// This function is no longer needed - we'll use getRecipeById directly
 
 export default async function RecipePage({ params }: { params: { id: string } }) {
-  const recipe = await getRecipe(params.id);
+  const recipe = await getRecipeById(params.id);
 
   // If recipe doesn't exist, show 404
   if (!recipe) {

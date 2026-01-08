@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import ButtonLogin from "@/components/ButtonLogin";
 import Link from "next/link";
+import { getAllRecipes } from "@/lib/recipes";
 
 interface Recipe {
   _id: string;
@@ -21,27 +22,11 @@ interface Recipe {
   updatedAt: string;
 }
 
-async function getRecipes(): Promise<Recipe[]> {
-  try {
-    const response = await fetch('/api/recipes', {
-      cache: 'no-store'
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch recipes');
-    }
-
-    const data = await response.json();
-    return data.success ? data.data : [];
-  } catch (error) {
-    console.error('Error fetching recipes:', error);
-    return [];
-  }
-}
+// This function is no longer needed - we'll use getAllRecipes directly
 
 export default async function Home() {
   const session = await auth();
-  const recipes = await getRecipes();
+  const recipes = await getAllRecipes();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-slate-800">

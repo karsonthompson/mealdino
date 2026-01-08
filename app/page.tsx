@@ -23,7 +23,7 @@ interface Recipe {
 
 async function getRecipes(): Promise<Recipe[]> {
   try {
-    const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/recipes`, {
+    const response = await fetch('/api/recipes', {
       cache: 'no-store'
     });
 

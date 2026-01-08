@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 // Function to fetch a single recipe
 async function getRecipe(id: string) {
   try {
-    const res = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/recipes/${id}`, {
+    const res = await fetch(`/api/recipes/${id}`, {
       cache: 'no-store'
     });
 

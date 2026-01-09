@@ -3,9 +3,56 @@
 import { useState } from 'react';
 import AddMealModal from './AddMealModal';
 
+// TypeScript interfaces for meal plan data structures
+interface Recipe {
+  _id: string;
+  title: string;
+  category: string;
+  prepTime: number;
+  macros: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+}
+
+interface Meal {
+  type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  recipe: Recipe;
+  notes: string;
+  source: 'fresh' | 'meal_prep' | 'leftovers' | 'frozen';
+}
+
+interface CookingSession {
+  recipe: Recipe;
+  notes: string;
+  timeSlot: 'morning' | 'afternoon' | 'evening';
+  servings: number;
+  purpose: 'meal_prep' | 'batch_cooking' | 'weekly_prep' | 'daily_cooking';
+}
+
+interface MealPlan {
+  _id: string;
+  date: string;
+  meals: Meal[];
+  cookingSessions: CookingSession[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface UpcomingDay {
+  date: string;
+  dateObj: Date;
+  formatted: string;
+  shortFormatted: string;
+  isToday: boolean;
+  isTomorrow: boolean;
+}
+
 interface PlanPageClientProps {
-  upcomingDays: any[];
-  mealPlansByDate: { [key: string]: any };
+  upcomingDays: UpcomingDay[];
+  mealPlansByDate: { [key: string]: MealPlan };
 }
 
 export default function PlanPageClient({ upcomingDays, mealPlansByDate }: PlanPageClientProps) {
@@ -15,7 +62,7 @@ export default function PlanPageClient({ upcomingDays, mealPlansByDate }: PlanPa
     <>
       {/* Day Panels */}
       <div className="space-y-6">
-        {upcomingDays.map((day) => {
+        {upcomingDays.map((day: UpcomingDay) => {
           const dayMealPlan = mealPlansByDate[day.date];
           const dayTitle = day.isToday ? 'Today' : day.isTomorrow ? 'Tomorrow' : day.shortFormatted.split(',')[0];
 
@@ -31,7 +78,7 @@ export default function PlanPageClient({ upcomingDays, mealPlansByDate }: PlanPa
                 {dayMealPlan && dayMealPlan.meals.length > 0 ? (
                   <div className="space-y-3">
                     <h4 className="text-lg font-semibold text-white mb-3">Planned Meals</h4>
-                    {dayMealPlan.meals.map((meal, index) => (
+                    {dayMealPlan.meals.map((meal: Meal, index: number) => (
                       <div key={index} className="bg-gray-700 rounded-lg p-4 border border-gray-600">
                         <div className="flex justify-between items-start">
                           <div>
@@ -77,7 +124,7 @@ export default function PlanPageClient({ upcomingDays, mealPlansByDate }: PlanPa
 
                 {dayMealPlan && dayMealPlan.cookingSessions.length > 0 ? (
                   <div className="space-y-3">
-                    {dayMealPlan.cookingSessions.map((session, index) => (
+                    {dayMealPlan.cookingSessions.map((session: CookingSession, index: number) => (
                       <div key={index} className="bg-gray-700 rounded-lg p-4 border border-gray-600">
                         <div className="flex justify-between items-start">
                           <div>

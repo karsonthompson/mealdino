@@ -2,10 +2,19 @@
 
 import { useState, useEffect } from 'react';
 
+interface UpcomingDay {
+  date: string;
+  dateObj: Date;
+  formatted: string;
+  shortFormatted: string;
+  isToday: boolean;
+  isTomorrow: boolean;
+}
+
 interface AddMealModalProps {
   isOpen: boolean;
   onClose: () => void;
-  upcomingDays: any[];
+  upcomingDays: UpcomingDay[];
 }
 
 interface Recipe {
@@ -157,7 +166,7 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealM
                     className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                     required
                   >
-                    {recipes.map((recipe) => (
+                    {recipes.map((recipe: Recipe) => (
                       <option key={recipe._id} value={recipe._id}>
                         {recipe.title} ({recipe.prepTime}min, {recipe.macros.calories} cal)
                       </option>
@@ -203,7 +212,7 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealM
             <div>
               <label className="block text-white font-medium mb-2">Date</label>
               <div className="grid grid-cols-3 gap-2">
-                {upcomingDays.slice(0, 6).map((day) => (
+                {upcomingDays.slice(0, 6).map((day: UpcomingDay) => (
                   <button
                     key={day.date}
                     type="button"

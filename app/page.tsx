@@ -51,7 +51,7 @@ export default async function Home() {
           </div>
 
           <div className="mt-8 pt-6 border-t border-gray-700">
-            <h4 className="text-lg font-semibold text-white mb-4">What you'll get access to:</h4>
+            <h4 className="text-lg font-semibold text-white mb-4">What you&apos;ll get access to:</h4>
             <ul className="space-y-2 text-gray-300">
               <li className="flex items-center">
                 <span className="text-green-400 mr-2">✓</span>

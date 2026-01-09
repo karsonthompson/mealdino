@@ -2,10 +2,13 @@
 
 import { signOut } from "next-auth/react";
 
-const ButtonLogout = () => {
+const ButtonLogout = ({ extraStyle = "" }) => {
   return (
-    <button className="btn btn-ghost" onClick={() => signOut()}>
-      Logout
+    <button
+      className={`px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-500 transition-colors font-medium ${extraStyle}`}
+      onClick={() => signOut({ callbackUrl: "/" })}
+    >
+      Sign out
     </button>
   );
 };

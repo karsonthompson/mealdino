@@ -18,6 +18,10 @@ const config = {
         }),
     ],
     adapter: MongoDBAdapter(clientPromise),
+    session: {
+        strategy: "database"
+    },
+    trustHost: true
 };
 
 export const { handlers, signIn, signOut, auth } = NextAuth(config);

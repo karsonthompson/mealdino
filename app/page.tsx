@@ -1,33 +1,14 @@
 import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 import ButtonLogin from "@/components/ButtonLogin";
-import Link from "next/link";
-import { getAllRecipes } from "@/lib/recipes";
-import HomePageClient from "./HomePageClient";
-
-interface Recipe {
-  _id: string;
-  title: string;
-  description: string;
-  category: 'breakfast' | 'lunch' | 'dinner' | 'snack';
-  prepTime: number;
-  ingredients: string[];
-  instructions: string[];
-  macros: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-  };
-  imageUrl: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// This function is no longer needed - we'll use getAllRecipes directly
 
 export default async function Home() {
   const session = await auth();
-  const recipes = await getAllRecipes();
+
+  // If user is already logged in, redirect to dashboard
+  if (session) {
+    redirect("/dashboard");
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-slate-800">
@@ -38,50 +19,58 @@ export default async function Home() {
               <h1 className="text-3xl font-bold text-green-400">MealDino</h1>
               <span className="ml-2 text-lg text-gray-300">🦕</span>
             </div>
-            <div className="flex items-center space-x-8">
-              <nav className="hidden md:flex space-x-8">
-                <Link href="/" className="text-green-400 font-medium">Recipes</Link>
-                <Link href="/plan" className="text-gray-300 hover:text-green-400 font-medium">Plan</Link>
-                <a href="#" className="text-gray-300 hover:text-green-400 font-medium">My Favorites</a>
-              </nav>
+            <div className="flex items-center">
               <ButtonLogin session={session} />
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-16">
-          <h2 className="text-5xl font-bold text-white mb-4">
-            Healthy Eating,
-            <span className="text-green-400"> Simplified</span>
+          <h2 className="text-5xl font-bold text-white mb-6">
+            Welcome to
+            <span className="text-green-400"> MealDino</span>
           </h2>
-          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-8">
             Stop overthinking what to eat. Discover clean, healthy recipes with ingredients you can trust.
-            Just click, cook, and enjoy.
+            Plan your meals and simplify your cooking.
           </p>
         </div>
 
-        <div className="mb-12">
-          <div className="flex justify-between items-center mb-8">
-            <h3 className="text-2xl font-semibold text-white">Today&apos;s Recipes</h3>
-            <div className="flex space-x-4">
-              <button className="px-4 py-2 text-sm font-medium text-green-400 bg-green-900 rounded-full hover:bg-green-800 transition-colors">
-                All
-              </button>
-              <button className="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-700 rounded-full hover:bg-gray-600 transition-colors">
-                Breakfast
-              </button>
-              <button className="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-700 rounded-full hover:bg-gray-600 transition-colors">
-                Lunch
-              </button>
-              <button className="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-700 rounded-full hover:bg-gray-600 transition-colors">
-                Dinner
-              </button>
-            </div>
+        <div className="max-w-md mx-auto bg-gray-800 rounded-lg p-8 border border-gray-700">
+          <h3 className="text-2xl font-bold text-white text-center mb-6">
+            Get Started Today
+          </h3>
+          <p className="text-gray-300 text-center mb-8">
+            Sign in to access your personal recipe collection, meal planning tools, and more.
+          </p>
+
+          <div className="space-y-4">
+            <ButtonLogin session={session} />
           </div>
 
-          <HomePageClient recipes={recipes} />
+          <div className="mt-8 pt-6 border-t border-gray-700">
+            <h4 className="text-lg font-semibold text-white mb-4">What you'll get access to:</h4>
+            <ul className="space-y-2 text-gray-300">
+              <li className="flex items-center">
+                <span className="text-green-400 mr-2">✓</span>
+                Curated healthy recipes
+              </li>
+              <li className="flex items-center">
+                <span className="text-green-400 mr-2">✓</span>
+                Personal meal planning
+              </li>
+              <li className="flex items-center">
+                <span className="text-green-400 mr-2">✓</span>
+                Save your favorites
+              </li>
+              <li className="flex items-center">
+                <span className="text-green-400 mr-2">✓</span>
+                Track your cooking schedule
+              </li>
+            </ul>
+          </div>
         </div>
       </main>
     </div>

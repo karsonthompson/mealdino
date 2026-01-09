@@ -97,16 +97,16 @@ export default async function PlanPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
-              <Link href="/">
+              <Link href="/dashboard">
                 <h1 className="text-3xl font-bold text-green-400 cursor-pointer hover:text-green-300">MealDino</h1>
               </Link>
               <span className="ml-2 text-lg text-gray-300">🦕</span>
             </div>
             <div className="flex items-center space-x-8">
               <nav className="hidden md:flex space-x-8">
-                <Link href="/" className="text-gray-300 hover:text-green-400 font-medium">Recipes</Link>
+                <Link href="/recipes" className="text-gray-300 hover:text-green-400 font-medium">Recipes</Link>
                 <Link href="/plan" className="text-green-400 font-medium">Plan</Link>
-                <a href="#" className="text-gray-300 hover:text-green-400 font-medium">My Favorites</a>
+                <Link href="/dashboard" className="text-gray-300 hover:text-green-400 font-medium">Dashboard</Link>
               </nav>
               <ButtonLogin session={session} />
             </div>

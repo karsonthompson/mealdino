@@ -55,7 +55,7 @@ export default function PlanPageClient({ upcomingDays, mealPlansByDate }: PlanPa
                             <h5 className="font-semibold text-white">{meal.recipe.title}</h5>
                             <p className="text-gray-400 text-sm">{meal.recipe.prepTime} min • {meal.recipe.macros.calories} cal</p>
                             {meal.notes && (
-                              <p className="text-gray-300 text-sm mt-2 italic">"{meal.notes}"</p>
+                              <p className="text-gray-300 text-sm mt-2 italic">&quot;{meal.notes}&quot;</p>
                             )}
                           </div>
                         </div>
@@ -95,7 +95,7 @@ export default function PlanPageClient({ upcomingDays, mealPlansByDate }: PlanPa
                             <h5 className="font-semibold text-white">Cook: {session.recipe.title}</h5>
                             <p className="text-gray-400 text-sm">{session.recipe.prepTime} min prep time</p>
                             {session.notes && (
-                              <p className="text-gray-300 text-sm mt-2 italic">"{session.notes}"</p>
+                              <p className="text-gray-300 text-sm mt-2 italic">&quot;{session.notes}&quot;</p>
                             )}
                           </div>
                         </div>

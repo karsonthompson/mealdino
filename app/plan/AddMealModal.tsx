@@ -1,0 +1,335 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+
+interface AddMealModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  upcomingDays: any[];
+}
+
+interface Recipe {
+  _id: string;
+  title: string;
+  category: string;
+  prepTime: number;
+  macros: {
+    calories: number;
+  };
+}
+
+export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealModalProps) {
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Form state
+  const [selectedRecipe, setSelectedRecipe] = useState('');
+  const [planType, setPlanType] = useState<'meal' | 'cooking_session'>('meal');
+  const [selectedDate, setSelectedDate] = useState('');
+  const [mealType, setMealType] = useState('lunch');
+  const [mealSource, setMealSource] = useState('fresh');
+  const [timeSlot, setTimeSlot] = useState('afternoon');
+  const [servings, setServings] = useState(4);
+  const [purpose, setPurpose] = useState('daily_cooking');
+  const [notes, setNotes] = useState('');
+
+  // Load recipes when modal opens
+  useEffect(() => {
+    if (isOpen && recipes.length === 0) {
+      loadRecipes();
+    }
+
+    // Set default date to today when modal opens
+    if (isOpen && upcomingDays.length > 0) {
+      setSelectedDate(upcomingDays[0].date);
+    }
+  }, [isOpen, upcomingDays, recipes.length]);
+
+  const loadRecipes = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/recipes');
+      const data = await response.json();
+      if (data.success) {
+        setRecipes(data.data);
+        if (data.data.length > 0) {
+          setSelectedRecipe(data.data[0]._id);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load recipes:', error);
+    }
+    setLoading(false);
+  };
+
+  const resetForm = () => {
+    setSelectedRecipe(recipes.length > 0 ? recipes[0]._id : '');
+    setPlanType('meal');
+    setSelectedDate(upcomingDays.length > 0 ? upcomingDays[0].date : '');
+    setMealType('lunch');
+    setMealSource('fresh');
+    setTimeSlot('afternoon');
+    setServings(4);
+    setPurpose('daily_cooking');
+    setNotes('');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+
+    try {
+      const payload = {
+        date: selectedDate,
+        type: planType,
+        recipe_id: selectedRecipe,
+        notes,
+        // Add type-specific fields
+        ...(planType === 'meal' ? {
+          meal_type: mealType,
+          source: mealSource
+        } : {
+          time_slot: timeSlot,
+          servings,
+          purpose
+        })
+      };
+
+      const response = await fetch('/api/meal-plans/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        // Success - close modal and refresh page
+        onClose();
+        resetForm();
+        window.location.reload(); // Simple refresh for now
+      } else {
+        console.error('Failed to add meal plan item');
+      }
+    } catch (error) {
+      console.error('Error submitting meal plan:', error);
+    }
+    setSubmitting(false);
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  const selectedRecipeData = recipes.find(r => r._id === selectedRecipe);
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-gray-800 rounded-xl shadow-2xl border border-gray-700 w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-white">Add to Plan</h2>
+            <button
+              onClick={handleClose}
+              className="text-gray-400 hover:text-white transition-colors"
+              aria-label="Close modal"
+            >
+              ✕
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Recipe Selection */}
+            <div>
+              <label className="block text-white font-medium mb-2">Recipe</label>
+              {loading ? (
+                <div className="text-gray-400">Loading recipes...</div>
+              ) : (
+                <>
+                  <select
+                    value={selectedRecipe}
+                    onChange={(e) => setSelectedRecipe(e.target.value)}
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                    required
+                  >
+                    {recipes.map((recipe) => (
+                      <option key={recipe._id} value={recipe._id}>
+                        {recipe.title} ({recipe.prepTime}min, {recipe.macros.calories} cal)
+                      </option>
+                    ))}
+                  </select>
+                  {selectedRecipeData && (
+                    <p className="text-gray-400 text-sm mt-1">
+                      {selectedRecipeData.category} • {selectedRecipeData.prepTime} min • {selectedRecipeData.macros.calories} cal
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Plan Type Toggle */}
+            <div>
+              <label className="block text-white font-medium mb-2">Type</label>
+              <div className="flex space-x-4">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    value="meal"
+                    checked={planType === 'meal'}
+                    onChange={(e) => setPlanType(e.target.value as 'meal')}
+                    className="mr-2 text-green-500 focus:ring-green-500"
+                  />
+                  <span className="text-gray-300">Meal</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    value="cooking_session"
+                    checked={planType === 'cooking_session'}
+                    onChange={(e) => setPlanType(e.target.value as 'cooking_session')}
+                    className="mr-2 text-green-500 focus:ring-green-500"
+                  />
+                  <span className="text-gray-300">Cooking Session</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Date Grid */}
+            <div>
+              <label className="block text-white font-medium mb-2">Date</label>
+              <div className="grid grid-cols-3 gap-2">
+                {upcomingDays.slice(0, 6).map((day) => (
+                  <button
+                    key={day.date}
+                    type="button"
+                    onClick={() => setSelectedDate(day.date)}
+                    className={`p-3 rounded-lg text-sm transition-colors ${
+                      selectedDate === day.date
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    <div className="font-medium">
+                      {day.isToday ? 'Today' : day.isTomorrow ? 'Tomorrow' : day.dateObj.toLocaleDateString('en-US', { weekday: 'short' })}
+                    </div>
+                    <div className="text-xs">
+                      {day.dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Conditional Fields */}
+            {planType === 'meal' ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-white font-medium mb-2">Meal Type</label>
+                  <select
+                    value={mealType}
+                    onChange={(e) => setMealType(e.target.value)}
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="breakfast">Breakfast</option>
+                    <option value="lunch">Lunch</option>
+                    <option value="dinner">Dinner</option>
+                    <option value="snack">Snack</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-white font-medium mb-2">Source</label>
+                  <select
+                    value={mealSource}
+                    onChange={(e) => setMealSource(e.target.value)}
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="fresh">Fresh</option>
+                    <option value="meal_prep">Meal Prep</option>
+                    <option value="leftovers">Leftovers</option>
+                    <option value="frozen">Frozen</option>
+                  </select>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-white font-medium mb-2">Time Slot</label>
+                  <select
+                    value={timeSlot}
+                    onChange={(e) => setTimeSlot(e.target.value)}
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="morning">Morning</option>
+                    <option value="afternoon">Afternoon</option>
+                    <option value="evening">Evening</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-white font-medium mb-2">Servings</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={servings}
+                    onChange={(e) => setServings(parseInt(e.target.value))}
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-white font-medium mb-2">Purpose</label>
+                  <select
+                    value={purpose}
+                    onChange={(e) => setPurpose(e.target.value)}
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="daily_cooking">Daily Cooking</option>
+                    <option value="meal_prep">Meal Prep</option>
+                    <option value="batch_cooking">Batch Cooking</option>
+                    <option value="weekly_prep">Weekly Prep</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Notes */}
+            <div>
+              <label className="block text-white font-medium mb-2">Notes (optional)</label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+                placeholder="Add any notes or reminders..."
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+                maxLength={200}
+              />
+              <p className="text-gray-500 text-xs mt-1">{notes.length}/200</p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex space-x-3">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting || !selectedRecipe}
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submitting ? 'Adding...' : 'Add to Plan'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}

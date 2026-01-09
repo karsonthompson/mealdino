@@ -39,20 +39,6 @@ export default async function RecipePage({ params }: { params: { id: string } })
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Recipe Header */}
         <div className="bg-gray-800 rounded-xl shadow-sm border border-gray-700 overflow-hidden mb-8">
-          <div className="h-64 bg-gradient-to-r from-gray-700 to-gray-600 flex items-center justify-center overflow-hidden">
-            {recipe.imageUrl && recipe.imageUrl !== 'https://via.placeholder.com/400x300?text=Recipe+Image' ? (
-              <img
-                src={recipe.imageUrl}
-                alt={recipe.title}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="text-gray-500 text-center">
-                <div className="text-6xl mb-4">🍽️</div>
-                <p className="text-sm">Recipe Image</p>
-              </div>
-            )}
-          </div>
 
           <div className="p-8">
             <div className="flex items-center gap-3 mb-4">

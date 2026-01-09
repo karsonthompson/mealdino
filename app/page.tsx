@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import ButtonLogin from "@/components/ButtonLogin";
 import Link from "next/link";
 import { getAllRecipes } from "@/lib/recipes";
+import HomePageClient from "./HomePageClient";
 
 interface Recipe {
   _id: string;
@@ -39,9 +40,9 @@ export default async function Home() {
             </div>
             <div className="flex items-center space-x-8">
               <nav className="hidden md:flex space-x-8">
-                <a href="#" className="text-gray-300 hover:text-green-400 font-medium">Recipes</a>
+                <Link href="/" className="text-green-400 font-medium">Recipes</Link>
+                <Link href="/plan" className="text-gray-300 hover:text-green-400 font-medium">Plan</Link>
                 <a href="#" className="text-gray-300 hover:text-green-400 font-medium">My Favorites</a>
-                <a href="#" className="text-gray-300 hover:text-green-400 font-medium">Meal Planner</a>
               </nav>
               <ButtonLogin session={session} />
             </div>
@@ -80,68 +81,7 @@ export default async function Home() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {recipes.length === 0 ? (
-              <div className="col-span-full text-center py-12">
-                <div className="text-gray-500 text-center">
-                  <div className="text-4xl mb-2">🍽️</div>
-                  <p className="text-lg text-gray-300">No recipes found</p>
-                  <p className="text-sm text-gray-400 mt-2">Be the first to add a recipe!</p>
-                </div>
-              </div>
-            ) : (
-              recipes.map((recipe) => (
-                <div
-                  key={recipe._id}
-                  className="bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-700"
-                >
-                  <div className="h-48 bg-gradient-to-r from-gray-700 to-gray-600 rounded-t-xl flex items-center justify-center overflow-hidden">
-                    {recipe.imageUrl && recipe.imageUrl !== 'https://via.placeholder.com/400x300?text=Recipe+Image' ? (
-                      <img
-                        src={recipe.imageUrl}
-                        alt={recipe.title}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="text-gray-500 text-center">
-                        <div className="text-4xl mb-2">🍽️</div>
-                        <p className="text-sm">Recipe Image</p>
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-6">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className={`px-3 py-1 text-xs font-medium rounded-full capitalize ${
-                        recipe.category === 'breakfast' ? 'bg-yellow-900 text-yellow-300' :
-                        recipe.category === 'lunch' ? 'bg-blue-900 text-blue-300' :
-                        recipe.category === 'dinner' ? 'bg-purple-900 text-purple-300' :
-                        'bg-green-900 text-green-300'
-                      }`}>
-                        {recipe.category}
-                      </span>
-                      <span className="text-sm text-gray-400">{recipe.prepTime} min</span>
-                    </div>
-                    <h4 className="text-lg font-semibold text-white mb-2">{recipe.title}</h4>
-                    <p className="text-gray-300 text-sm mb-4 line-clamp-2">
-                      {recipe.description}
-                    </p>
-                    <div className="flex justify-between items-center text-xs text-gray-400 mb-4">
-                      <span>{recipe.macros.calories} cal</span>
-                      <span>{recipe.macros.protein}g protein</span>
-                      <span>{recipe.macros.carbs}g carbs</span>
-                      <span>{recipe.macros.fat}g fat</span>
-                    </div>
-                    <Link
-                      href={`/recipe/${recipe._id}`}
-                      className="block w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-500 transition-colors font-medium text-center"
-                    >
-                      View Recipe
-                    </Link>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+          <HomePageClient recipes={recipes} />
         </div>
       </main>
     </div>

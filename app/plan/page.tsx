@@ -4,6 +4,43 @@ import Link from "next/link";
 import { getMealPlansByDateRange, formatDateForDB, getCurrentWeekRange } from "@/lib/mealPlans";
 import PlanPageClient from "./PlanPageClient";
 
+interface Recipe {
+  _id: string;
+  title: string;
+  category: string;
+  prepTime: number;
+  macros: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+}
+
+interface Meal {
+  type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  recipe: Recipe;
+  notes: string;
+  source: 'fresh' | 'meal_prep' | 'leftovers' | 'frozen';
+}
+
+interface CookingSession {
+  recipe: Recipe;
+  notes: string;
+  timeSlot: 'morning' | 'afternoon' | 'evening';
+  servings: number;
+  purpose: 'meal_prep' | 'batch_cooking' | 'weekly_prep' | 'daily_cooking';
+}
+
+interface MealPlan {
+  _id: string;
+  date: string;
+  meals: Meal[];
+  cookingSessions: CookingSession[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Helper function to get the next few days
 function getUpcomingDays(numDays = 7) {
   const days = [];
@@ -49,7 +86,7 @@ export default async function PlanPage() {
   const mealPlans = await getMealPlansByDateRange(startDate, endDate);
 
   // Create a map for quick lookup
-  const mealPlansByDate = mealPlans.reduce((acc, plan) => {
+  const mealPlansByDate = mealPlans.reduce((acc: { [key: string]: MealPlan }, plan: MealPlan) => {
     acc[plan.date] = plan;
     return acc;
   }, {});

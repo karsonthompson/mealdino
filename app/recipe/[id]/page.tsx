@@ -26,7 +26,7 @@ export default async function RecipePage({ params }: { params: { id: string } })
               </Link>
               <span className="ml-2 text-lg text-gray-300">🦕</span>
             </div>
-            <Link href="/">
+            <Link href="/recipes">
               <button className="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors">
                 ← Back to Recipes
               </button>

@@ -1,7 +1,41 @@
 import { addMealToPlan, addCookingSessionToPlan } from '@/lib/mealPlans';
+import { auth } from '@/auth';
 
 export async function POST(request) {
   try {
+    // Get user session
+    const session = await auth();
+
+    if (!session || !session.user) {
+      return Response.json(
+        {
+          success: false,
+          message: 'Authentication required'
+        },
+        { status: 401 }
+      );
+    }
+
+    // Get user ID - NextAuth v5 with database sessions stores it as session.userId
+    // or session.user.id. Convert to string to ensure compatibility.
+    const userId = String(session.userId || session.user?.id || '');
+    
+    if (!userId || userId === 'undefined' || userId === 'null') {
+      console.error('User ID not found in session. Session structure:', {
+        hasSession: !!session,
+        hasUser: !!session?.user,
+        userId: session?.userId,
+        userIdFromUser: session?.user?.id,
+        fullSession: JSON.stringify(session, null, 2)
+      });
+      return Response.json(
+        {
+          success: false,
+          message: 'User ID not found in session. Please try logging in again.'
+        },
+        { status: 401 }
+      );
+    }
     const data = await request.json();
     const { date, type, recipe_id, notes = '' } = data;
 
@@ -29,7 +63,7 @@ export async function POST(request) {
         source
       };
 
-      result = await addMealToPlan(date, mealData);
+      result = await addMealToPlan(date, userId, mealData);
     } else if (type === 'cooking_session') {
       // Add cooking session to plan
       const {
@@ -46,7 +80,7 @@ export async function POST(request) {
         purpose
       };
 
-      result = await addCookingSessionToPlan(date, sessionData);
+      result = await addCookingSessionToPlan(date, userId, sessionData);
     } else {
       return Response.json(
         {

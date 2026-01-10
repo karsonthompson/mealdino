@@ -75,6 +75,19 @@ function getUpcomingDays(numDays = 7) {
 export default async function PlanPage() {
   const session = await auth();
 
+  // Redirect if not authenticated
+  if (!session || !session.user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-slate-800 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-white mb-4">Authentication Required</h2>
+          <p className="text-gray-300 mb-6">Please log in to view your meal plan.</p>
+          <ButtonLogin session={null} />
+        </div>
+      </div>
+    );
+  }
+
   // Get the next 7 days
   const upcomingDays = getUpcomingDays(7);
 
@@ -82,8 +95,29 @@ export default async function PlanPage() {
   const startDate = upcomingDays[0].date;
   const endDate = upcomingDays[upcomingDays.length - 1].date;
 
-  // Fetch meal plans for this date range
-  const mealPlans = await getMealPlansByDateRange(startDate, endDate);
+  // Get user ID - NextAuth v5 with database sessions stores it as session.userId
+  // or session.user.id. Convert to string to ensure compatibility.
+  const userId = String(session.userId || session.user?.id || '');
+  
+  if (!userId || userId === 'undefined' || userId === 'null') {
+    console.error('User ID not found in session. Session structure:', {
+      hasSession: !!session,
+      hasUser: !!session?.user,
+      userId: session?.userId,
+      userIdFromUser: session?.user?.id
+    });
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-slate-800 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-white mb-4">Error</h2>
+          <p className="text-gray-300">Unable to identify user. Please try logging in again.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Fetch meal plans for this date range for the current user
+  const mealPlans = await getMealPlansByDateRange(startDate, endDate, userId);
 
   // Create a map for quick lookup
   const mealPlansByDate = mealPlans.reduce((acc: { [key: string]: MealPlan }, plan: MealPlan) => {

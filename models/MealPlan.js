@@ -2,11 +2,18 @@ import mongoose from 'mongoose';
 
 const MealPlanSchema = new mongoose.Schema(
   {
+    // User who owns this meal plan
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',  // ← Key change: ObjectId + ref
+      required: true,
+      index: true
+    },
+
     // The date for this meal plan (e.g., "2025-01-08")
     date: {
       type: String,
       required: [true, 'Please provide a date'],
-      unique: true, // Only one meal plan per date
       match: [/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format']
     },
 
@@ -86,8 +93,8 @@ MealPlanSchema.methods.hasMealType = function(mealType) {
   return this.meals.some(meal => meal.type === mealType);
 };
 
-// Index for faster queries by date
-MealPlanSchema.index({ date: 1 });
+// Compound index for faster queries by user and date
+MealPlanSchema.index({ userId: 1, date: 1 }, { unique: true }); // Only one meal plan per user per date
 
 // Check if model already exists (prevents Next.js from recompiling it multiple times)
 export default mongoose.models.MealPlan || mongoose.model('MealPlan', MealPlanSchema);

@@ -113,18 +113,24 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealM
         body: JSON.stringify(payload),
       });
 
+      const responseData = await response.json();
+
       if (response.ok) {
         // Success - close modal and refresh page
         onClose();
         resetForm();
         window.location.reload(); // Simple refresh for now
       } else {
-        console.error('Failed to add meal plan item');
+        // Show error to user
+        console.error('Failed to add meal plan item:', responseData);
+        alert(`Failed to add meal: ${responseData.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error submitting meal plan:', error);
+      alert('An error occurred while adding the meal. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
 
   const handleClose = () => {

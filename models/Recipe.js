@@ -2,6 +2,21 @@ import mongoose from 'mongoose';
 
 const RecipeSchema = new mongoose.Schema(
   {
+    // User who created this recipe (null for global recipes)
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+      index: true
+    },
+
+    // Whether this recipe is available to all users
+    isGlobal: {
+      type: Boolean,
+      default: false,
+      index: true
+    },
+
     title: {
       type: String,
       required: [true, 'Please provide a recipe title'],
@@ -56,6 +71,11 @@ const RecipeSchema = new mongoose.Schema(
     timestamps: true, // automatically adds createdAt and updatedAt fields
   }
 );
+
+// Add compound indexes for efficient queries
+RecipeSchema.index({ userId: 1, createdAt: -1 }); // User's recipes by creation date
+RecipeSchema.index({ isGlobal: 1, createdAt: -1 }); // Global recipes by creation date
+RecipeSchema.index({ category: 1, isGlobal: 1 }); // Filter by category and type
 
 // Check if model already exists (prevents Next.js from recompiling it multiple times)
 export default mongoose.models.Recipe || mongoose.model('Recipe', RecipeSchema);

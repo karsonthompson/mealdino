@@ -22,6 +22,8 @@ interface Recipe {
   title: string;
   category: string;
   prepTime: number;
+  userId: string | null;
+  isGlobal: boolean;
   macros: {
     calories: number;
   };
@@ -174,12 +176,15 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealM
                   >
                     {recipes.map((recipe: Recipe) => (
                       <option key={recipe._id} value={recipe._id}>
-                        {recipe.title} ({recipe.prepTime}min, {recipe.macros.calories} cal)
+                        {recipe.title} {recipe.isGlobal ? '[Global]' : '[Your Recipe]'} ({recipe.prepTime}min, {recipe.macros.calories} cal)
                       </option>
                     ))}
                   </select>
                   {selectedRecipeData && (
                     <p className="text-gray-400 text-sm mt-1">
+                      <span className={`inline-block px-2 py-1 rounded text-xs mr-2 ${selectedRecipeData.isGlobal ? 'bg-blue-900 text-blue-300' : 'bg-green-900 text-green-300'}`}>
+                        {selectedRecipeData.isGlobal ? 'Global Recipe' : 'Your Recipe'}
+                      </span>
                       {selectedRecipeData.category} • {selectedRecipeData.prepTime} min • {selectedRecipeData.macros.calories} cal
                     </p>
                   )}

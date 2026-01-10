@@ -87,7 +87,7 @@ export default function RecipeActions({ recipeId, recipe }: RecipeActionsProps) 
           <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full border border-gray-700">
             <h3 className="text-xl font-bold text-white mb-4">Delete Recipe</h3>
             <p className="text-gray-300 mb-6">
-              Are you sure you want to delete "{recipe.title}"? This action cannot be undone.
+              Are you sure you want to delete &quot;{recipe.title}&quot;? This action cannot be undone.
             </p>
 
             <div className="flex space-x-3 justify-end">

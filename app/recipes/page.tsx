@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import ButtonLogin from "@/components/ButtonLogin";
 import Link from "next/link";
 import { getAllRecipes } from "@/lib/recipes";
-import HomePageClient from "../HomePageClient";
+import RecipesPageClient from "./RecipesPageClient";
 
 interface Recipe {
   _id: string;
@@ -65,57 +65,10 @@ export default async function RecipesPage() {
           </p>
         </div>
 
-        <div className="mb-12">
-          <div className="flex justify-between items-center mb-8">
-            <h3 className="text-2xl font-semibold text-white">Recipes</h3>
-            <div className="flex items-center space-x-6">
-              {/* Recipe Type Filters */}
-              <div className="flex space-x-4">
-                <button className="px-4 py-2 text-sm font-medium text-green-400 bg-green-900 rounded-full hover:bg-green-800 transition-colors">
-                  All
-                </button>
-                <button className="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-700 rounded-full hover:bg-gray-600 transition-colors">
-                  My Recipes
-                </button>
-                <button className="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-700 rounded-full hover:bg-gray-600 transition-colors">
-                  Global
-                </button>
-              </div>
-
-              {/* Add Recipe Button - only show if authenticated */}
-              {session && (
-                <Link
-                  href="/recipes/add"
-                  className="px-6 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
-                >
-                  <span>+</span>
-                  <span>Add Recipe</span>
-                </Link>
-              )}
-            </div>
-          </div>
-
-          {/* Category Filters */}
-          <div className="flex space-x-4 mb-8">
-            <button className="px-4 py-2 text-sm font-medium text-green-400 bg-green-900 rounded-full hover:bg-green-800 transition-colors">
-              All Categories
-            </button>
-            <button className="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-700 rounded-full hover:bg-gray-600 transition-colors">
-              Breakfast
-            </button>
-            <button className="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-700 rounded-full hover:bg-gray-600 transition-colors">
-              Lunch
-            </button>
-            <button className="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-700 rounded-full hover:bg-gray-600 transition-colors">
-              Dinner
-            </button>
-            <button className="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-700 rounded-full hover:bg-gray-600 transition-colors">
-              Snack
-            </button>
-          </div>
-
-          <HomePageClient recipes={recipes} />
-        </div>
+        <RecipesPageClient
+          initialRecipes={recipes}
+          isAuthenticated={!!session}
+        />
       </main>
     </div>
   );

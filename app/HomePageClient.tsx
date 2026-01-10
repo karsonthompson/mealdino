@@ -19,6 +19,8 @@ interface Recipe {
     fat: number;
   };
   imageUrl: string;
+  userId: string | null;
+  isGlobal: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -67,14 +69,24 @@ export default function HomePageClient({ recipes }: HomePageClientProps) {
 
               <div className="p-6">
                 <div className="flex items-center justify-between mb-2 pr-10">
-                  <span className={`px-3 py-1 text-xs font-medium rounded-full capitalize ${
-                    recipe.category === 'breakfast' ? 'bg-yellow-900 text-yellow-300' :
-                    recipe.category === 'lunch' ? 'bg-blue-900 text-blue-300' :
-                    recipe.category === 'dinner' ? 'bg-purple-900 text-purple-300' :
-                    'bg-green-900 text-green-300'
-                  }`}>
-                    {recipe.category}
-                  </span>
+                  <div className="flex items-center space-x-2">
+                    <span className={`px-3 py-1 text-xs font-medium rounded-full capitalize ${
+                      recipe.category === 'breakfast' ? 'bg-yellow-900 text-yellow-300' :
+                      recipe.category === 'lunch' ? 'bg-blue-900 text-blue-300' :
+                      recipe.category === 'dinner' ? 'bg-purple-900 text-purple-300' :
+                      'bg-green-900 text-green-300'
+                    }`}>
+                      {recipe.category}
+                    </span>
+                    {/* Ownership indicator */}
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      recipe.isGlobal
+                        ? 'bg-blue-900 text-blue-300'
+                        : 'bg-green-900 text-green-300'
+                    }`}>
+                      {recipe.isGlobal ? 'Global' : 'Your Recipe'}
+                    </span>
+                  </div>
                   <span className="text-sm text-gray-400">{recipe.prepTime} min</span>
                 </div>
                 <h4 className="text-lg font-semibold text-white mb-2 pr-10">{recipe.title}</h4>

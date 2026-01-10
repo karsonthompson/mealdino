@@ -1,16 +1,21 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getRecipeById } from "@/lib/recipes";
-
-// This function is no longer needed - we'll use getRecipeById directly
+import { auth } from "@/auth";
+import RecipeActions from "./RecipeActions";
 
 export default async function RecipePage({ params }: { params: { id: string } }) {
   const recipe = await getRecipeById(params.id);
+  const session = await auth();
 
   // If recipe doesn't exist, show 404
   if (!recipe) {
     notFound();
   }
+
+  // Check if the current user owns this recipe
+  const isOwner = session?.user?.id === recipe.userId;
+  const canEdit = isOwner && !recipe.isGlobal;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-slate-800">
@@ -54,9 +59,17 @@ export default async function RecipePage({ params }: { params: { id: string } })
               <span className="text-gray-300">{recipe.prepTime} minutes</span>
             </div>
 
-            <h1 className="text-4xl font-bold text-white mb-4">
-              {recipe.title}
-            </h1>
+            <div className="flex items-start justify-between mb-4">
+              <h1 className="text-4xl font-bold text-white">
+                {recipe.title}
+              </h1>
+              {canEdit && (
+                <RecipeActions
+                  recipeId={recipe._id}
+                  recipe={recipe}
+                />
+              )}
+            </div>
 
             <p className="text-lg text-gray-300 mb-6">
               {recipe.description}

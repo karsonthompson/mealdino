@@ -95,15 +95,13 @@ export default async function PlanPage() {
   const startDate = upcomingDays[0].date;
   const endDate = upcomingDays[upcomingDays.length - 1].date;
 
-  // Get user ID - NextAuth v5 with database sessions stores it as session.userId
-  // or session.user.id. Convert to string to ensure compatibility.
-  const userId = String(session.userId || session.user?.id || '');
-  
-  if (!userId || userId === 'undefined' || userId === 'null') {
-    console.error('User ID not found in session. Session structure:', {
+  // Get user ID from session
+  const userId = session.user.id;
+
+  if (!userId) {
+    console.error('User ID not found in session:', {
       hasSession: !!session,
       hasUser: !!session?.user,
-      userId: session?.userId,
       userIdFromUser: session?.user?.id
     });
     return (

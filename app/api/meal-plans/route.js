@@ -16,11 +16,10 @@ export async function GET(request) {
       );
     }
 
-    // Get user ID - NextAuth v5 with database sessions stores it as session.userId
-    // or session.user.id. Convert to string to ensure compatibility.
-    const userId = String(session.userId || session.user?.id || '');
-    
-    if (!userId || userId === 'undefined' || userId === 'null') {
+    // Get user ID from session
+    const userId = session.user.id;
+
+    if (!userId) {
       console.error('User ID not found in session:', session);
       return Response.json(
         {

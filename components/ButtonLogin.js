@@ -7,9 +7,9 @@ import ButtonLogout from "./ButtonLogout";
 const ButtonLogin = ({ session, extraStyle = "" }) => {
   if (session) {
     return (
-      <div className="flex items-center space-x-4">
-        <span className="text-gray-300">
-          Welcome, <span className="text-green-400">{session.user.email || session.user.name || "friend"}</span>
+      <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 text-center sm:text-left">
+        <span className="text-gray-300 text-sm sm:text-base">
+          Welcome, <span className="text-green-400 break-words">{session.user.email || session.user.name || "friend"}</span>
         </span>
         <ButtonLogout extraStyle={extraStyle} />
       </div>

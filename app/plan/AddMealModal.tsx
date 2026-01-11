@@ -145,33 +145,33 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealM
   const selectedRecipeData = recipes.find(r => r._id === selectedRecipe);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50">
       <div className="bg-gray-800 rounded-xl shadow-2xl border border-gray-700 w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {/* Header */}
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-white">Add to Plan</h2>
+          <div className="flex justify-between items-center mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-white">Add to Plan</h2>
             <button
               onClick={handleClose}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-gray-400 hover:text-white transition-colors text-lg sm:text-xl"
               aria-label="Close modal"
             >
               ✕
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             {/* Recipe Selection */}
             <div>
-              <label className="block text-white font-medium mb-2">Recipe</label>
+              <label className="block text-white font-medium mb-2 text-sm sm:text-base">Recipe</label>
               {loading ? (
-                <div className="text-gray-400">Loading recipes...</div>
+                <div className="text-gray-400 text-sm sm:text-base">Loading recipes...</div>
               ) : (
                 <>
                   <select
                     value={selectedRecipe}
                     onChange={(e) => setSelectedRecipe(e.target.value)}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                     required
                   >
                     {recipes.map((recipe: Recipe) => (
@@ -181,7 +181,7 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealM
                     ))}
                   </select>
                   {selectedRecipeData && (
-                    <p className="text-gray-400 text-sm mt-1">
+                    <p className="text-gray-400 text-xs sm:text-sm mt-1">
                       <span className={`inline-block px-2 py-1 rounded text-xs mr-2 ${selectedRecipeData.isGlobal ? 'bg-blue-900 text-blue-300' : 'bg-green-900 text-green-300'}`}>
                         {selectedRecipeData.isGlobal ? 'Global Recipe' : 'Your Recipe'}
                       </span>
@@ -194,7 +194,7 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealM
 
             {/* Plan Type Toggle */}
             <div>
-              <label className="block text-white font-medium mb-2">Type</label>
+              <label className="block text-white font-medium mb-2 text-sm sm:text-base">Type</label>
               <div className="flex space-x-4">
                 <label className="flex items-center">
                   <input
@@ -204,7 +204,7 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealM
                     onChange={(e) => setPlanType(e.target.value as 'meal')}
                     className="mr-2 text-green-500 focus:ring-green-500"
                   />
-                  <span className="text-gray-300">Meal</span>
+                  <span className="text-gray-300 text-sm sm:text-base">Meal</span>
                 </label>
                 <label className="flex items-center">
                   <input
@@ -214,27 +214,27 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealM
                     onChange={(e) => setPlanType(e.target.value as 'cooking_session')}
                     className="mr-2 text-green-500 focus:ring-green-500"
                   />
-                  <span className="text-gray-300">Cooking Session</span>
+                  <span className="text-gray-300 text-sm sm:text-base">Cooking Session</span>
                 </label>
               </div>
             </div>
 
             {/* Date Grid */}
             <div>
-              <label className="block text-white font-medium mb-2">Date</label>
-              <div className="grid grid-cols-3 gap-2">
+              <label className="block text-white font-medium mb-2 text-sm sm:text-base">Date</label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {upcomingDays.slice(0, 6).map((day: UpcomingDay) => (
                   <button
                     key={day.date}
                     type="button"
                     onClick={() => setSelectedDate(day.date)}
-                    className={`p-3 rounded-lg text-sm transition-colors ${
+                    className={`p-2 sm:p-3 rounded-lg text-xs sm:text-sm transition-colors ${
                       selectedDate === day.date
                         ? 'bg-green-600 text-white'
                         : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                     }`}
                   >
-                    <div className="font-medium">
+                    <div className="font-medium text-xs sm:text-sm">
                       {day.isToday ? 'Today' : day.isTomorrow ? 'Tomorrow' : day.dateObj.toLocaleDateString('en-US', { weekday: 'short' })}
                     </div>
                     <div className="text-xs">
@@ -247,13 +247,13 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealM
 
             {/* Conditional Fields */}
             {planType === 'meal' ? (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <div>
-                  <label className="block text-white font-medium mb-2">Meal Type</label>
+                  <label className="block text-white font-medium mb-2 text-sm sm:text-base">Meal Type</label>
                   <select
                     value={mealType}
                     onChange={(e) => setMealType(e.target.value)}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                   >
                     <option value="breakfast">Breakfast</option>
                     <option value="lunch">Lunch</option>
@@ -262,11 +262,11 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealM
                   </select>
                 </div>
                 <div>
-                  <label className="block text-white font-medium mb-2">Source</label>
+                  <label className="block text-white font-medium mb-2 text-sm sm:text-base">Source</label>
                   <select
                     value={mealSource}
                     onChange={(e) => setMealSource(e.target.value)}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                   >
                     <option value="fresh">Fresh</option>
                     <option value="meal_prep">Meal Prep</option>
@@ -276,13 +276,13 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealM
                 </div>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <div>
-                  <label className="block text-white font-medium mb-2">Time Slot</label>
+                  <label className="block text-white font-medium mb-2 text-sm sm:text-base">Time Slot</label>
                   <select
                     value={timeSlot}
                     onChange={(e) => setTimeSlot(e.target.value)}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                   >
                     <option value="morning">Morning</option>
                     <option value="afternoon">Afternoon</option>
@@ -290,22 +290,22 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealM
                   </select>
                 </div>
                 <div>
-                  <label className="block text-white font-medium mb-2">Servings</label>
+                  <label className="block text-white font-medium mb-2 text-sm sm:text-base">Servings</label>
                   <input
                     type="number"
                     min="1"
                     max="20"
                     value={servings}
                     onChange={(e) => setServings(parseInt(e.target.value))}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-white font-medium mb-2">Purpose</label>
+                  <label className="block text-white font-medium mb-2 text-sm sm:text-base">Purpose</label>
                   <select
                     value={purpose}
                     onChange={(e) => setPurpose(e.target.value)}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                   >
                     <option value="daily_cooking">Daily Cooking</option>
                     <option value="meal_prep">Meal Prep</option>
@@ -318,31 +318,31 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealM
 
             {/* Notes */}
             <div>
-              <label className="block text-white font-medium mb-2">Notes (optional)</label>
+              <label className="block text-white font-medium mb-2 text-sm sm:text-base">Notes (optional)</label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
                 placeholder="Add any notes or reminders..."
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
                 maxLength={200}
               />
               <p className="text-gray-500 text-xs mt-1">{notes.length}/200</p>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex space-x-3">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
               <button
                 type="button"
                 onClick={handleClose}
-                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-colors"
+                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-colors text-sm sm:text-base"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submitting || !selectedRecipe}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
               >
                 {submitting ? 'Adding...' : 'Add to Plan'}
               </button>

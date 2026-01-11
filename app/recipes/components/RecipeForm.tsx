@@ -262,17 +262,17 @@ export default function RecipeForm() {
 
       {/* Nutritional Information */}
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-4">
+        <label className="block text-sm font-medium text-gray-300 mb-3 sm:mb-4">
           Nutritional Information (per serving) *
         </label>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <div>
             <label className="block text-xs text-gray-400 mb-1">Calories</label>
             <input
               type="number"
               value={formData.macros.calories}
               onChange={(e) => handleMacroChange('calories', parseInt(e.target.value) || 0)}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-green-500 focus:border-green-500"
+              className="w-full px-2 sm:px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white text-sm focus:ring-green-500 focus:border-green-500"
               min="0"
               required
             />
@@ -283,7 +283,7 @@ export default function RecipeForm() {
               type="number"
               value={formData.macros.protein}
               onChange={(e) => handleMacroChange('protein', parseInt(e.target.value) || 0)}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-green-500 focus:border-green-500"
+              className="w-full px-2 sm:px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white text-sm focus:ring-green-500 focus:border-green-500"
               min="0"
               required
             />
@@ -294,7 +294,7 @@ export default function RecipeForm() {
               type="number"
               value={formData.macros.carbs}
               onChange={(e) => handleMacroChange('carbs', parseInt(e.target.value) || 0)}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-green-500 focus:border-green-500"
+              className="w-full px-2 sm:px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white text-sm focus:ring-green-500 focus:border-green-500"
               min="0"
               required
             />
@@ -305,7 +305,7 @@ export default function RecipeForm() {
               type="number"
               value={formData.macros.fat}
               onChange={(e) => handleMacroChange('fat', parseInt(e.target.value) || 0)}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-green-500 focus:border-green-500"
+              className="w-full px-2 sm:px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white text-sm focus:ring-green-500 focus:border-green-500"
               min="0"
               required
             />
@@ -331,11 +331,11 @@ export default function RecipeForm() {
       </div>
 
       {/* Submit Button */}
-      <div className="flex justify-end space-x-4 pt-6 border-t border-gray-600">
+      <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4 pt-4 sm:pt-6 border-t border-gray-600">
         <button
           type="button"
           onClick={() => router.push('/recipes')}
-          className="px-6 py-2 text-gray-300 border border-gray-600 rounded-lg hover:bg-gray-700 transition-colors"
+          className="px-4 sm:px-6 py-2 text-gray-300 border border-gray-600 rounded-lg hover:bg-gray-700 transition-colors text-sm sm:text-base"
           disabled={submitting}
         >
           Cancel
@@ -343,7 +343,7 @@ export default function RecipeForm() {
         <button
           type="submit"
           disabled={submitting}
-          className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="px-4 sm:px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm sm:text-base"
         >
           {submitting ? 'Creating...' : 'Create Recipe'}
         </button>

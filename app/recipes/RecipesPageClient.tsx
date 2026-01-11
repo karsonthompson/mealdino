@@ -129,14 +129,15 @@ export default function RecipesPageClient({ initialRecipes, isAuthenticated }: R
 
   return (
     <div className="mb-12">
-      <div className="flex justify-between items-center mb-8">
-        <h3 className="text-2xl font-semibold text-white">
+      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-8 space-y-4 lg:space-y-0">
+        <h3 className="text-xl sm:text-2xl font-semibold text-white text-center lg:text-left">
           Recipes
           {loading && <span className="text-sm text-gray-400 ml-2">(Loading...)</span>}
         </h3>
-        <div className="flex items-center space-x-6">
+
+        <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4 lg:space-x-6">
           {/* Recipe Type Filters */}
-          <div className="flex space-x-4">
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-4">
             <button
               onClick={() => handleFilterChange('all')}
               className={getFilterButtonClass('all')}
@@ -152,7 +153,8 @@ export default function RecipesPageClient({ initialRecipes, isAuthenticated }: R
                 className={getFilterButtonClass('my-recipes')}
                 disabled={loading}
               >
-                My Recipes ({recipeCounts.myRecipes})
+                <span className="hidden sm:inline">My Recipes</span>
+                <span className="sm:hidden">Mine</span> ({recipeCounts.myRecipes})
               </button>
             )}
 
@@ -169,22 +171,24 @@ export default function RecipesPageClient({ initialRecipes, isAuthenticated }: R
           {isAuthenticated && (
             <Link
               href="/recipes/add"
-              className="px-6 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+              className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
             >
               <span>+</span>
-              <span>Add Recipe</span>
+              <span className="hidden sm:inline">Add Recipe</span>
+              <span className="sm:hidden">Add</span>
             </Link>
           )}
         </div>
       </div>
 
       {/* Category Filters */}
-      <div className="flex space-x-4 mb-8">
+      <div className="flex flex-wrap justify-center sm:justify-start gap-2 sm:gap-4 mb-8">
         <button
           onClick={() => handleCategoryFilter('all')}
           className={getCategoryButtonClass('all')}
         >
-          All Categories
+          <span className="hidden sm:inline">All Categories</span>
+          <span className="sm:hidden">All</span>
         </button>
         <button
           onClick={() => handleCategoryFilter('breakfast')}

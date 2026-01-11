@@ -149,15 +149,15 @@ export default function QuickAddModal({ isOpen, onClose, recipe }: QuickAddModal
   if (!isOpen || !recipe) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50">
       <div className="bg-gray-800 rounded-xl shadow-2xl border border-gray-700 w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {/* Header */}
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-white">Quick Add</h2>
+          <div className="flex justify-between items-center mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-white">Quick Add</h2>
             <button
               onClick={handleClose}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-gray-400 hover:text-white transition-colors text-lg sm:text-xl"
               aria-label="Close modal"
             >
               ✕
@@ -165,9 +165,9 @@ export default function QuickAddModal({ isOpen, onClose, recipe }: QuickAddModal
           </div>
 
           {/* Recipe Info */}
-          <div className="bg-gray-700 rounded-lg p-4 mb-6">
-            <div className="flex items-center gap-3 mb-2">
-              <span className={`px-3 py-1 text-xs font-medium rounded-full capitalize ${
+          <div className="bg-gray-700 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+            <div className="flex items-center gap-2 sm:gap-3 mb-2">
+              <span className={`px-2 sm:px-3 py-1 text-xs font-medium rounded-full capitalize ${
                 recipe.category === 'breakfast' ? 'bg-yellow-900 text-yellow-300' :
                 recipe.category === 'lunch' ? 'bg-blue-900 text-blue-300' :
                 recipe.category === 'dinner' ? 'bg-purple-900 text-purple-300' :
@@ -176,11 +176,11 @@ export default function QuickAddModal({ isOpen, onClose, recipe }: QuickAddModal
                 {recipe.category}
               </span>
             </div>
-            <h3 className="font-semibold text-white text-lg">{recipe.title}</h3>
-            <p className="text-gray-400 text-sm">{recipe.prepTime} min • {recipe.macros.calories} cal</p>
+            <h3 className="font-semibold text-white text-base sm:text-lg">{recipe.title}</h3>
+            <p className="text-gray-400 text-xs sm:text-sm">{recipe.prepTime} min • {recipe.macros.calories} cal</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
             {/* Plan Type Toggle */}
             <div>
               <label className="block text-white font-medium mb-2">Type</label>
@@ -210,14 +210,14 @@ export default function QuickAddModal({ isOpen, onClose, recipe }: QuickAddModal
 
             {/* Date Grid */}
             <div>
-              <label className="block text-white font-medium mb-2">Date</label>
-              <div className="grid grid-cols-3 gap-2">
+              <label className="block text-white font-medium mb-2 text-sm sm:text-base">Date</label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {upcomingDays.map((day) => (
                   <button
                     key={day.date}
                     type="button"
                     onClick={() => setSelectedDate(day.date)}
-                    className={`p-2 rounded-lg text-sm transition-colors ${
+                    className={`p-2 rounded-lg text-xs sm:text-sm transition-colors ${
                       selectedDate === day.date
                         ? 'bg-green-600 text-white'
                         : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
@@ -238,14 +238,14 @@ export default function QuickAddModal({ isOpen, onClose, recipe }: QuickAddModal
             {planType === 'meal' ? (
               <div className="space-y-3">
                 <div>
-                  <label className="block text-white font-medium mb-2">Meal Type</label>
+                  <label className="block text-white font-medium mb-2 text-sm sm:text-base">Meal Type</label>
                   <div className="grid grid-cols-2 gap-2">
                     {['breakfast', 'lunch', 'dinner', 'snack'].map((type) => (
                       <button
                         key={type}
                         type="button"
                         onClick={() => setMealType(type)}
-                        className={`p-2 text-sm rounded-lg transition-colors capitalize ${
+                        className={`p-2 text-xs sm:text-sm rounded-lg transition-colors capitalize ${
                           mealType === type
                             ? 'bg-green-600 text-white'
                             : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
@@ -257,7 +257,7 @@ export default function QuickAddModal({ isOpen, onClose, recipe }: QuickAddModal
                   </div>
                 </div>
                 <div>
-                  <label className="block text-white font-medium mb-2">Source</label>
+                  <label className="block text-white font-medium mb-2 text-sm sm:text-base">Source</label>
                   <select
                     value={mealSource}
                     onChange={(e) => setMealSource(e.target.value)}
@@ -273,12 +273,12 @@ export default function QuickAddModal({ isOpen, onClose, recipe }: QuickAddModal
             ) : (
               <div className="space-y-3">
                 <div>
-                  <label className="block text-white font-medium mb-2">Time & Servings</label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <label className="block text-white font-medium mb-2 text-sm sm:text-base">Time & Servings</label>
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
                     <select
                       value={timeSlot}
                       onChange={(e) => setTimeSlot(e.target.value)}
-                      className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="bg-gray-700 border border-gray-600 rounded-lg px-2 sm:px-3 py-2 text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                     >
                       <option value="morning">Morning</option>
                       <option value="afternoon">Afternoon</option>
@@ -290,13 +290,13 @@ export default function QuickAddModal({ isOpen, onClose, recipe }: QuickAddModal
                       max="20"
                       value={servings}
                       onChange={(e) => setServings(parseInt(e.target.value))}
-                      className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="bg-gray-700 border border-gray-600 rounded-lg px-2 sm:px-3 py-2 text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                       placeholder="Servings"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-white font-medium mb-2">Purpose</label>
+                  <label className="block text-white font-medium mb-2 text-sm sm:text-base">Purpose</label>
                   <select
                     value={purpose}
                     onChange={(e) => setPurpose(e.target.value)}
@@ -313,30 +313,30 @@ export default function QuickAddModal({ isOpen, onClose, recipe }: QuickAddModal
 
             {/* Notes (Compact) */}
             <div>
-              <label className="block text-white font-medium mb-2">Notes (optional)</label>
+              <label className="block text-white font-medium mb-2 text-sm sm:text-base">Notes (optional)</label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={2}
                 placeholder="Quick note..."
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
                 maxLength={200}
               />
             </div>
 
             {/* Action Buttons */}
-            <div className="flex space-x-3 pt-2">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 pt-2">
               <button
                 type="button"
                 onClick={handleClose}
-                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-colors"
+                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-colors text-sm sm:text-base"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
               >
                 {submitting ? 'Adding...' : 'Add to Plan'}
               </button>

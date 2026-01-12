@@ -29,55 +29,41 @@ export default function CreateCollectionModal({ isOpen, onClose, onSubmit }: Cre
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log('🟡 Modal handleSubmit called');
     e.preventDefault();
 
     if (!name.trim()) {
-      console.log('🔴 Validation failed: Collection name is required');
       setError('Collection name is required');
       return;
     }
 
     if (name.trim().length > 50) {
-      console.log('🔴 Validation failed: Collection name too long');
       setError('Collection name must be 50 characters or less');
       return;
     }
 
     if (description.trim().length > 200) {
-      console.log('🔴 Validation failed: Description too long');
       setError('Description must be 200 characters or less');
       return;
     }
 
-    console.log('🟢 All validations passed, proceeding with submission');
     setIsSubmitting(true);
     setError('');
 
-    const collectionData = {
-      name: name.trim(),
-      description: description.trim(),
-      color: selectedColor,
-    };
-
-    console.log('🟡 About to call onSubmit with data:', collectionData);
-
     try {
-      await onSubmit(collectionData);
+      await onSubmit({
+        name: name.trim(),
+        description: description.trim(),
+        color: selectedColor,
+      });
 
-      console.log('🟢 onSubmit completed successfully, resetting form');
       // Reset form only on success
       setName('');
       setDescription('');
       setSelectedColor(COLLECTION_COLORS[0]);
       setError('');
     } catch (err) {
-      console.error('🔴 Error caught in modal handleSubmit:', err);
-      console.error('🔴 Error type:', err?.constructor?.name);
-      console.error('🔴 Error message:', err?.message);
       setError(err instanceof Error ? err.message : 'Failed to create collection');
     } finally {
-      console.log('🟡 Setting isSubmitting to false');
       setIsSubmitting(false);
     }
   };

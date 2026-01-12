@@ -165,7 +165,19 @@ export default function RecipesPageClient({ initialRecipes, isAuthenticated }: R
             >
               Global ({recipeCounts.global})
             </button>
+
           </div>
+
+          {/* Collections Link - only show if authenticated */}
+          {isAuthenticated && (
+            <Link
+              href="/collections"
+              className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
+            >
+              <span>📂</span>
+              <span>Collections</span>
+            </Link>
+          )}
 
           {/* Add Recipe Button - only show if authenticated */}
           {isAuthenticated && (

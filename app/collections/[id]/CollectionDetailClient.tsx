@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import HomePageClient from '../../HomePageClient';
 
@@ -46,11 +46,7 @@ export default function CollectionDetailClient({ collectionId }: CollectionDetai
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchCollection();
-  }, [collectionId]);
-
-  const fetchCollection = async () => {
+  const fetchCollection = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -69,7 +65,11 @@ export default function CollectionDetailClient({ collectionId }: CollectionDetai
     } finally {
       setLoading(false);
     }
-  };
+  }, [collectionId]);
+
+  useEffect(() => {
+    fetchCollection();
+  }, [fetchCollection]);
 
   const handleRemoveRecipe = async (recipeId: string, recipeTitle: string) => {
     if (!collection) return;

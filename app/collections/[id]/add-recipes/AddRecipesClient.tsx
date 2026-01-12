@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 
 interface Recipe {
@@ -52,20 +52,7 @@ export default function AddRecipesClient({ collectionId }: AddRecipesClientProps
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    Promise.all([fetchCollection(), fetchAvailableRecipes()]);
-  }, [collectionId]);
-
-  useEffect(() => {
-    // Filter recipes by category
-    if (categoryFilter === 'all') {
-      setFilteredRecipes(availableRecipes);
-    } else {
-      setFilteredRecipes(availableRecipes.filter(recipe => recipe.category === categoryFilter));
-    }
-  }, [availableRecipes, categoryFilter]);
-
-  const fetchCollection = async () => {
+  const fetchCollection = useCallback(async () => {
     try {
       const response = await fetch(`/api/collections/${collectionId}`);
       const data = await response.json();
@@ -79,9 +66,9 @@ export default function AddRecipesClient({ collectionId }: AddRecipesClientProps
       console.error('Error fetching collection:', error);
       setError('Failed to load collection');
     }
-  };
+  }, [collectionId]);
 
-  const fetchAvailableRecipes = async () => {
+  const fetchAvailableRecipes = useCallback(async () => {
     try {
       const response = await fetch('/api/recipes');
       const data = await response.json();
@@ -97,7 +84,20 @@ export default function AddRecipesClient({ collectionId }: AddRecipesClientProps
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    Promise.all([fetchCollection(), fetchAvailableRecipes()]);
+  }, [fetchCollection, fetchAvailableRecipes]);
+
+  useEffect(() => {
+    // Filter recipes by category
+    if (categoryFilter === 'all') {
+      setFilteredRecipes(availableRecipes);
+    } else {
+      setFilteredRecipes(availableRecipes.filter(recipe => recipe.category === categoryFilter));
+    }
+  }, [availableRecipes, categoryFilter]);
 
   const handleAddRecipe = async (recipe: Recipe) => {
     setAddingRecipes(prev => new Set(prev).add(recipe._id));
@@ -187,7 +187,7 @@ export default function AddRecipesClient({ collectionId }: AddRecipesClientProps
             style={{ backgroundColor: collection?.color }}
           />
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white">
-            Add Recipes to "{collection?.name}"
+            Add Recipes to &quot;{collection?.name}&quot;
           </h2>
         </div>
         <p className="text-lg sm:text-xl text-gray-300">

@@ -50,7 +50,7 @@ export default async function CollectionsPage() {
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">My Collections</h2>
           <p className="text-lg sm:text-xl text-gray-300">
-            Organize your recipes into custom collections. Create groups like "Favorite Meals", "Quick Dinners", or "Healthy Options".
+            Organize your recipes into custom collections. Create groups like &quot;Favorite Meals&quot;, &quot;Quick Dinners&quot;, or &quot;Healthy Options&quot;.
           </p>
         </div>
 

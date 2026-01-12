@@ -63,7 +63,7 @@ export default function CollectionsPageClient() {
       alert(`API Test: ${response.status} - ${data.success ? 'Success' : data.message}`);
     } catch (error) {
       console.error('🧪 Test API error:', error);
-      alert(`API Test Error: ${error.message}`);
+      alert(`API Test Error: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 

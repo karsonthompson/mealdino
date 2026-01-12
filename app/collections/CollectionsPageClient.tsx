@@ -107,17 +107,23 @@ export default function CollectionsPageClient() {
       }
     } catch (error) {
       console.error('🔴 Error in handleCreateCollection:', error);
-      console.error('🔴 Error type:', error.constructor.name);
-      console.error('🔴 Error message:', error.message);
-      console.error('🔴 Error stack:', error.stack);
 
-      // Log network errors specifically
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        console.error('🔴 This appears to be a network error - check if server is running');
+      if (error instanceof Error) {
+        console.error('🔴 Error type:', error.constructor.name);
+        console.error('🔴 Error message:', error.message);
+        console.error('🔴 Error stack:', error.stack);
+
+        // Log network errors specifically
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+          console.error('🔴 This appears to be a network error - check if server is running');
+        }
+
+        // Re-throw the error so the modal can handle it
+        throw error;
+      } else {
+        console.error('🔴 Unknown error type:', typeof error);
+        throw new Error('Failed to create collection');
       }
-
-      // Re-throw the error so the modal can handle it
-      throw error instanceof Error ? error : new Error('Failed to create collection');
     }
   };
 

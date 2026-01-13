@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import ButtonLogin from "@/components/ButtonLogin";
 import Link from "next/link";
-import { getMealPlansByDateRange, formatDateForDB, getCurrentWeekRange } from "@/lib/mealPlans";
+import { getMealPlansByDateRange, formatDateForDB, getCurrentWeekRange, getCurrentMonthRange, getMonthRange, getMonthlyDays } from "@/lib/mealPlans";
 import PlanPageClient from "./PlanPageClient";
 
 interface Recipe {
@@ -72,7 +72,16 @@ function getUpcomingDays(numDays = 7) {
   return days;
 }
 
-export default async function PlanPage() {
+interface PlanPageSearchParams {
+  view?: 'weekly' | 'monthly';
+  month?: string; // Format: YYYY-MM
+}
+
+export default async function PlanPage({
+  searchParams
+}: {
+  searchParams: PlanPageSearchParams;
+}) {
   const session = await auth();
 
   // Redirect if not authenticated
@@ -88,12 +97,40 @@ export default async function PlanPage() {
     );
   }
 
-  // Get the next 7 days
-  const upcomingDays = getUpcomingDays(7);
+  // Determine view mode and date range
+  const viewMode = searchParams.view || 'weekly';
+  const today = new Date();
+  let currentYear = today.getFullYear();
+  let currentMonth = today.getMonth();
 
-  // Get the date range for fetching meal plans
-  const startDate = upcomingDays[0].date;
-  const endDate = upcomingDays[upcomingDays.length - 1].date;
+  // Parse month parameter if provided
+  if (searchParams.month && viewMode === 'monthly') {
+    const [year, month] = searchParams.month.split('-').map(Number);
+    if (year && month && month >= 1 && month <= 12) {
+      currentYear = year;
+      currentMonth = month - 1; // Convert to 0-based month
+    }
+  }
+
+  let startDate: string;
+  let endDate: string;
+  let upcomingDays: any[] = [];
+  let monthlyDays: any[] = [];
+
+  if (viewMode === 'monthly') {
+    // Get monthly date range
+    const monthRange = getMonthRange(currentYear, currentMonth);
+    startDate = monthRange.startDate;
+    endDate = monthRange.endDate;
+
+    // Generate monthly calendar days
+    monthlyDays = getMonthlyDays(currentYear, currentMonth);
+  } else {
+    // Get weekly data (existing logic)
+    upcomingDays = getUpcomingDays(7);
+    startDate = upcomingDays[0].date;
+    endDate = upcomingDays[upcomingDays.length - 1].date;
+  }
 
   // Get user ID from session
   const userId = session.user.id;
@@ -159,7 +196,11 @@ export default async function PlanPage() {
         </div>
 
         <PlanPageClient
+          viewMode={viewMode}
           upcomingDays={upcomingDays}
+          monthlyDays={monthlyDays}
+          currentYear={currentYear}
+          currentMonth={currentMonth}
           mealPlansByDate={mealPlansByDate}
         />
       </main>

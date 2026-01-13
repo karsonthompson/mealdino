@@ -1,7 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import AddMealModal from './AddMealModal';
+import ViewToggle from '@/components/ViewToggle';
+import MonthlyCalendar from '@/components/MonthlyCalendar';
 
 // TypeScript interfaces for meal plan data structures
 interface Recipe {
@@ -50,19 +53,79 @@ interface UpcomingDay {
   isTomorrow: boolean;
 }
 
+interface MonthlyDay {
+  date: string;
+  dateObj: Date;
+  dayNumber: number;
+  isCurrentMonth: boolean;
+  isPrevMonth: boolean;
+  isNextMonth: boolean;
+  isToday: boolean;
+  formatted: string;
+}
+
 interface PlanPageClientProps {
+  viewMode: 'weekly' | 'monthly';
   upcomingDays: UpcomingDay[];
+  monthlyDays: MonthlyDay[];
+  currentYear: number;
+  currentMonth: number;
   mealPlansByDate: { [key: string]: MealPlan };
 }
 
-export default function PlanPageClient({ upcomingDays, mealPlansByDate }: PlanPageClientProps) {
+export default function PlanPageClient({
+  viewMode,
+  upcomingDays,
+  monthlyDays,
+  currentYear,
+  currentMonth,
+  mealPlansByDate
+}: PlanPageClientProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const handleViewChange = (newView: 'weekly' | 'monthly') => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('view', newView);
+
+    // If switching to monthly and no month is set, use current month
+    if (newView === 'monthly' && !params.has('month')) {
+      const today = new Date();
+      const monthParam = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+      params.set('month', monthParam);
+    }
+
+    router.push(`/plan?${params.toString()}`);
+  };
+
+  const handleMonthChange = (year: number, month: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    const monthParam = `${year}-${String(month + 1).padStart(2, '0')}`;
+    params.set('month', monthParam);
+    params.set('view', 'monthly');
+    router.push(`/plan?${params.toString()}`);
+  };
+
+  const handleDayClick = (date: string) => {
+    setSelectedDate(date);
+    setIsModalOpen(true);
+  };
 
   return (
     <>
-      {/* Day Panels */}
-      <div className="space-y-6">
-        {upcomingDays.map((day: UpcomingDay) => {
+      {/* View Toggle */}
+      <div className="flex justify-center mb-8">
+        <ViewToggle currentView={viewMode} onViewChange={handleViewChange} />
+      </div>
+
+      {/* Conditional Content */}
+      {viewMode === 'weekly' ? (
+        <>
+          {/* Weekly Day Panels */}
+          <div className="space-y-6">
+            {upcomingDays.map((day: UpcomingDay) => {
           const dayMealPlan = mealPlansByDate[day.date];
           const dayTitle = day.isToday ? 'Today' : day.isTomorrow ? 'Tomorrow' : day.shortFormatted.split(',')[0];
 
@@ -159,11 +222,23 @@ export default function PlanPageClient({ upcomingDays, mealPlansByDate }: PlanPa
           );
         })}
 
-        {/* Navigation Hint */}
-        <div className="text-center">
-          <p className="text-gray-400 text-xs sm:text-sm px-4">Showing next 7 days • Use the + button to add meals 📅</p>
+          {/* Navigation Hint */}
+          <div className="text-center">
+            <p className="text-gray-400 text-xs sm:text-sm px-4">Showing next 7 days • Use the + button to add meals 📅</p>
+          </div>
         </div>
-      </div>
+        </>
+      ) : (
+        /* Monthly Calendar */
+        <MonthlyCalendar
+          monthlyDays={monthlyDays}
+          mealPlansByDate={mealPlansByDate}
+          currentYear={currentYear}
+          currentMonth={currentMonth}
+          onMonthChange={handleMonthChange}
+          onDayClick={handleDayClick}
+        />
+      )}
 
       {/* Floating Action Button */}
       <button
@@ -177,8 +252,11 @@ export default function PlanPageClient({ upcomingDays, mealPlansByDate }: PlanPa
       {/* Modal */}
       <AddMealModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        upcomingDays={upcomingDays}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedDate(null);
+        }}
+        upcomingDays={viewMode === 'weekly' ? upcomingDays : []}
       />
     </>
   );

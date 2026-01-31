@@ -21,6 +21,7 @@ export default async function Dashboard() {
                                 <Link href="/recipes" className="text-gray-300 hover:text-green-400 font-medium text-sm sm:text-base">Recipes</Link>
                                 <Link href="/plan" className="text-gray-300 hover:text-green-400 font-medium text-sm sm:text-base">Plan</Link>
                                 <Link href="/dashboard" className="text-green-400 font-medium text-sm sm:text-base">Dashboard</Link>
+                                <Link href="/pricing" className="text-gray-300 hover:text-green-400 font-medium text-sm sm:text-base">Pricing</Link>
                             </nav>
                             <div className="w-full sm:w-auto flex justify-center">
                                 <ButtonLogin session={session} />

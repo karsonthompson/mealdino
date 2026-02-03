@@ -10,6 +10,7 @@ interface Recipe {
   description: string;
   category: 'breakfast' | 'lunch' | 'dinner' | 'snack';
   prepTime: number;
+  recipeServings: number;
   ingredients: string[];
   instructions: string[];
   macros: {
@@ -46,6 +47,7 @@ export default async function RecipesPage() {
               <nav className="flex flex-wrap justify-center space-x-4 sm:space-x-8">
                 <Link href="/recipes" className="text-green-400 font-medium whitespace-nowrap text-sm sm:text-base">Recipes</Link>
                 <Link href="/plan" className="text-gray-300 hover:text-green-400 font-medium whitespace-nowrap text-sm sm:text-base">Plan</Link>
+                <Link href="/shopping" className="text-gray-300 hover:text-green-400 font-medium whitespace-nowrap text-sm sm:text-base">Shopping</Link>
                 <Link href="/dashboard" className="text-gray-300 hover:text-green-400 font-medium whitespace-nowrap text-sm sm:text-base">Dashboard</Link>
               </nav>
               <div className="w-full sm:w-auto flex justify-center">

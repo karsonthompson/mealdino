@@ -7,6 +7,7 @@ interface Recipe {
   title: string;
   category: string;
   prepTime: number;
+  recipeServings: number;
   macros: {
     calories: number;
   };
@@ -48,7 +49,7 @@ export default function QuickAddModal({ isOpen, onClose, recipe }: QuickAddModal
   const [mealType, setMealType] = useState('lunch');
   const [mealSource, setMealSource] = useState('fresh');
   const [timeSlot, setTimeSlot] = useState('afternoon');
-  const [servings, setServings] = useState(4);
+  const [plannedServings, setPlannedServings] = useState(1);
   const [purpose, setPurpose] = useState('daily_cooking');
   const [notes, setNotes] = useState('');
 
@@ -74,6 +75,8 @@ export default function QuickAddModal({ isOpen, onClose, recipe }: QuickAddModal
       } else {
         setMealType('lunch'); // Default fallback
       }
+
+      setPlannedServings(recipe.recipeServings || 1);
     }
   }, [recipe, isOpen]);
 
@@ -83,7 +86,7 @@ export default function QuickAddModal({ isOpen, onClose, recipe }: QuickAddModal
     setMealType('lunch');
     setMealSource('fresh');
     setTimeSlot('afternoon');
-    setServings(4);
+    setPlannedServings(recipe?.recipeServings || 1);
     setPurpose('daily_cooking');
     setNotes('');
   };
@@ -103,10 +106,11 @@ export default function QuickAddModal({ isOpen, onClose, recipe }: QuickAddModal
         // Add type-specific fields
         ...(planType === 'meal' ? {
           meal_type: mealType,
-          source: mealSource
+          source: mealSource,
+          planned_servings: plannedServings
         } : {
           time_slot: timeSlot,
-          servings,
+          planned_servings: plannedServings,
           purpose
         })
       };
@@ -178,6 +182,7 @@ export default function QuickAddModal({ isOpen, onClose, recipe }: QuickAddModal
             </div>
             <h3 className="font-semibold text-white text-base sm:text-lg">{recipe.title}</h3>
             <p className="text-gray-400 text-xs sm:text-sm">{recipe.prepTime} min • {recipe.macros.calories} cal</p>
+            <p className="text-gray-500 text-xs sm:text-sm mt-1">Recipe serves {recipe.recipeServings || 1}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
@@ -269,6 +274,17 @@ export default function QuickAddModal({ isOpen, onClose, recipe }: QuickAddModal
                     <option value="frozen">Frozen</option>
                   </select>
                 </div>
+                <div>
+                  <label className="block text-white font-medium mb-2 text-sm sm:text-base">Planned Servings</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={plannedServings}
+                    onChange={(e) => setPlannedServings(parseInt(e.target.value) || 1)}
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
               </div>
             ) : (
               <div className="space-y-3">
@@ -287,9 +303,9 @@ export default function QuickAddModal({ isOpen, onClose, recipe }: QuickAddModal
                     <input
                       type="number"
                       min="1"
-                      max="20"
-                      value={servings}
-                      onChange={(e) => setServings(parseInt(e.target.value))}
+                      max="50"
+                      value={plannedServings}
+                      onChange={(e) => setPlannedServings(parseInt(e.target.value) || 1)}
                       className="bg-gray-700 border border-gray-600 rounded-lg px-2 sm:px-3 py-2 text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                       placeholder="Servings"
                     />

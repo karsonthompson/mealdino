@@ -10,6 +10,7 @@ interface Recipe {
   description: string;
   category: 'breakfast' | 'lunch' | 'dinner' | 'snack';
   prepTime: number;
+  recipeServings: number;
   ingredients: string[];
   instructions: string[];
   macros: {

@@ -57,6 +57,8 @@ export default async function RecipePage({ params }: { params: { id: string } })
               </span>
               <span className="text-gray-400">•</span>
               <span className="text-gray-300 text-sm sm:text-base">{recipe.prepTime} minutes</span>
+              <span className="text-gray-400">•</span>
+              <span className="text-gray-300 text-sm sm:text-base">Serves {recipe.recipeServings || 1}</span>
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 space-y-3 sm:space-y-0">

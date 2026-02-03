@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AddMealModal from './AddMealModal';
 import ViewToggle from '@/components/ViewToggle';
@@ -12,6 +12,7 @@ interface Recipe {
   title: string;
   category: string;
   prepTime: number;
+  recipeServings: number;
   macros: {
     calories: number;
     protein: number;
@@ -25,6 +26,8 @@ interface Meal {
   recipe: Recipe;
   notes: string;
   source: 'fresh' | 'meal_prep' | 'leftovers' | 'frozen';
+  plannedServings: number;
+  excludeFromShopping: boolean;
 }
 
 interface CookingSession {
@@ -32,6 +35,8 @@ interface CookingSession {
   notes: string;
   timeSlot: 'morning' | 'afternoon' | 'evening';
   servings: number;
+  plannedServings: number;
+  excludeFromShopping: boolean;
   purpose: 'meal_prep' | 'batch_cooking' | 'weekly_prep' | 'daily_cooking';
 }
 
@@ -83,8 +88,16 @@ export default function PlanPageClient({
 }: PlanPageClientProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [localMealPlansByDate, setLocalMealPlansByDate] = useState<{ [key: string]: MealPlan }>(mealPlansByDate);
+  const [updatingServingsKey, setUpdatingServingsKey] = useState<string | null>(null);
+  const [recentlySavedServingsKey, setRecentlySavedServingsKey] = useState<string | null>(null);
+  const [updatingShoppingToggleKey, setUpdatingShoppingToggleKey] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    setLocalMealPlansByDate(mealPlansByDate);
+  }, [mealPlansByDate]);
 
   const handleViewChange = (newView: 'weekly' | 'monthly') => {
     const params = new URLSearchParams(searchParams.toString());
@@ -113,6 +126,93 @@ export default function PlanPageClient({
     setIsModalOpen(true);
   };
 
+  const updateEntryServings = async (
+    date: string,
+    entryType: 'meal' | 'cooking_session',
+    index: number,
+    nextServings: number
+  ) => {
+    const safeServings = Math.max(1, nextServings);
+    const entryKey = `${date}:${entryType}:${index}`;
+    setUpdatingServingsKey(entryKey);
+
+    try {
+      const response = await fetch('/api/meal-plans/servings', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          date,
+          entryType,
+          index,
+          plannedServings: safeServings
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result?.success || !result?.data) {
+        throw new Error(result?.message || 'Failed to update servings');
+      }
+
+      setLocalMealPlansByDate((prev) => ({
+        ...prev,
+        [date]: result.data
+      }));
+      setRecentlySavedServingsKey(entryKey);
+      setTimeout(() => {
+        setRecentlySavedServingsKey((current) => (current === entryKey ? null : current));
+      }, 1200);
+    } catch (error) {
+      console.error('Failed to update planned servings:', error);
+      alert('Failed to update servings. Please try again.');
+    } finally {
+      setUpdatingServingsKey(null);
+    }
+  };
+
+  const toggleExcludeFromShopping = async (
+    date: string,
+    entryType: 'meal' | 'cooking_session',
+    index: number,
+    currentValue: boolean
+  ) => {
+    const entryKey = `${date}:${entryType}:${index}:shopping`;
+    setUpdatingShoppingToggleKey(entryKey);
+
+    try {
+      const response = await fetch('/api/meal-plans/shopping', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          date,
+          entryType,
+          index,
+          excludeFromShopping: !currentValue
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result?.success || !result?.data) {
+        throw new Error(result?.message || 'Failed to update shopping exclusion');
+      }
+
+      setLocalMealPlansByDate((prev) => ({
+        ...prev,
+        [date]: result.data
+      }));
+    } catch (error) {
+      console.error('Failed to update shopping exclusion:', error);
+      alert('Failed to update shopping exclusion. Please try again.');
+    } finally {
+      setUpdatingShoppingToggleKey(null);
+    }
+  };
+
   return (
     <>
       {/* View Toggle */}
@@ -126,7 +226,7 @@ export default function PlanPageClient({
           {/* Weekly Day Panels */}
           <div className="space-y-6">
             {upcomingDays.map((day: UpcomingDay) => {
-          const dayMealPlan = mealPlansByDate[day.date];
+          const dayMealPlan = localMealPlansByDate[day.date];
           const dayTitle = day.isToday ? 'Today' : day.isTomorrow ? 'Tomorrow' : day.shortFormatted.split(',')[0];
 
           return (
@@ -163,7 +263,51 @@ export default function PlanPageClient({
                               </span>
                             </div>
                             <h5 className="font-semibold text-white text-sm sm:text-base">{meal.recipe.title}</h5>
-                            <p className="text-gray-400 text-xs sm:text-sm">{meal.recipe.prepTime} min • {meal.recipe.macros.calories} cal</p>
+                            <p className="text-gray-400 text-xs sm:text-sm">{meal.recipe.prepTime} min • {meal.recipe.macros.calories} cal • {meal.plannedServings || 1} serving(s)</p>
+                            <div className="mt-2 inline-flex items-center gap-2 bg-gray-800 rounded-lg border border-gray-600 px-2 py-1">
+                              <button
+                                type="button"
+                                onClick={() => updateEntryServings(day.date, 'meal', index, (meal.plannedServings || 1) - 1)}
+                                disabled={updatingServingsKey === `${day.date}:meal:${index}` || (meal.plannedServings || 1) <= 1}
+                                className="w-8 h-8 sm:w-6 sm:h-6 rounded bg-gray-700 text-gray-200 disabled:opacity-40"
+                                aria-label="Decrease planned servings"
+                              >
+                                -
+                              </button>
+                              <span className="text-xs text-gray-300 min-w-14 text-center">{meal.plannedServings || 1} planned</span>
+                              <button
+                                type="button"
+                                onClick={() => updateEntryServings(day.date, 'meal', index, (meal.plannedServings || 1) + 1)}
+                                disabled={updatingServingsKey === `${day.date}:meal:${index}`}
+                                className="w-8 h-8 sm:w-6 sm:h-6 rounded bg-gray-700 text-gray-200 disabled:opacity-40"
+                                aria-label="Increase planned servings"
+                              >
+                                +
+                              </button>
+                              {(updatingServingsKey === `${day.date}:meal:${index}` || recentlySavedServingsKey === `${day.date}:meal:${index}`) && (
+                                <span className={`text-[10px] ml-1 ${updatingServingsKey === `${day.date}:meal:${index}` ? 'text-yellow-300' : 'text-green-300'}`}>
+                                  {updatingServingsKey === `${day.date}:meal:${index}` ? 'Saving...' : 'Saved'}
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-2">
+                              <button
+                                type="button"
+                                onClick={() => toggleExcludeFromShopping(day.date, 'meal', index, meal.excludeFromShopping)}
+                                disabled={updatingShoppingToggleKey === `${day.date}:meal:${index}:shopping`}
+                                className={`text-xs px-2 py-1 rounded border ${
+                                  meal.excludeFromShopping
+                                    ? 'border-yellow-600 bg-yellow-900/40 text-yellow-200'
+                                    : 'border-gray-600 bg-gray-800 text-gray-300'
+                                } disabled:opacity-50`}
+                              >
+                                {updatingShoppingToggleKey === `${day.date}:meal:${index}:shopping`
+                                  ? 'Saving...'
+                                  : meal.excludeFromShopping
+                                    ? 'Excluded from shopping'
+                                    : 'Include in shopping'}
+                              </button>
+                            </div>
                             {meal.notes && (
                               <p className="text-gray-300 text-xs sm:text-sm mt-2 italic">&quot;{meal.notes}&quot;</p>
                             )}
@@ -199,11 +343,55 @@ export default function PlanPageClient({
                                 {session.purpose.replace('_', ' ')}
                               </span>
                               <span className="px-1.5 sm:px-2 py-1 text-xs rounded bg-green-900 text-green-300">
-                                {session.servings} servings
+                                {(session.plannedServings || session.servings || 1)} servings
                               </span>
                             </div>
                             <h5 className="font-semibold text-white text-sm sm:text-base">Cook: {session.recipe.title}</h5>
                             <p className="text-gray-400 text-xs sm:text-sm">{session.recipe.prepTime} min prep time</p>
+                            <div className="mt-2 inline-flex items-center gap-2 bg-gray-800 rounded-lg border border-gray-600 px-2 py-1">
+                              <button
+                                type="button"
+                                onClick={() => updateEntryServings(day.date, 'cooking_session', index, (session.plannedServings || session.servings || 1) - 1)}
+                                disabled={updatingServingsKey === `${day.date}:cooking_session:${index}` || (session.plannedServings || session.servings || 1) <= 1}
+                                className="w-8 h-8 sm:w-6 sm:h-6 rounded bg-gray-700 text-gray-200 disabled:opacity-40"
+                                aria-label="Decrease planned servings"
+                              >
+                                -
+                              </button>
+                              <span className="text-xs text-gray-300 min-w-14 text-center">{session.plannedServings || session.servings || 1} planned</span>
+                              <button
+                                type="button"
+                                onClick={() => updateEntryServings(day.date, 'cooking_session', index, (session.plannedServings || session.servings || 1) + 1)}
+                                disabled={updatingServingsKey === `${day.date}:cooking_session:${index}`}
+                                className="w-8 h-8 sm:w-6 sm:h-6 rounded bg-gray-700 text-gray-200 disabled:opacity-40"
+                                aria-label="Increase planned servings"
+                              >
+                                +
+                              </button>
+                              {(updatingServingsKey === `${day.date}:cooking_session:${index}` || recentlySavedServingsKey === `${day.date}:cooking_session:${index}`) && (
+                                <span className={`text-[10px] ml-1 ${updatingServingsKey === `${day.date}:cooking_session:${index}` ? 'text-yellow-300' : 'text-green-300'}`}>
+                                  {updatingServingsKey === `${day.date}:cooking_session:${index}` ? 'Saving...' : 'Saved'}
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-2">
+                              <button
+                                type="button"
+                                onClick={() => toggleExcludeFromShopping(day.date, 'cooking_session', index, session.excludeFromShopping)}
+                                disabled={updatingShoppingToggleKey === `${day.date}:cooking_session:${index}:shopping`}
+                                className={`text-xs px-2 py-1 rounded border ${
+                                  session.excludeFromShopping
+                                    ? 'border-yellow-600 bg-yellow-900/40 text-yellow-200'
+                                    : 'border-gray-600 bg-gray-800 text-gray-300'
+                                } disabled:opacity-50`}
+                              >
+                                {updatingShoppingToggleKey === `${day.date}:cooking_session:${index}:shopping`
+                                  ? 'Saving...'
+                                  : session.excludeFromShopping
+                                    ? 'Excluded from shopping'
+                                    : 'Include in shopping'}
+                              </button>
+                            </div>
                             {session.notes && (
                               <p className="text-gray-300 text-xs sm:text-sm mt-2 italic">&quot;{session.notes}&quot;</p>
                             )}
@@ -232,7 +420,7 @@ export default function PlanPageClient({
         /* Monthly Calendar */
         <MonthlyCalendar
           monthlyDays={monthlyDays}
-          mealPlansByDate={mealPlansByDate}
+          mealPlansByDate={localMealPlansByDate}
           currentYear={currentYear}
           currentMonth={currentMonth}
           onMonthChange={handleMonthChange}

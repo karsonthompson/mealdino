@@ -9,6 +9,7 @@ interface Recipe {
   description: string;
   category: 'breakfast' | 'lunch' | 'dinner' | 'snack';
   prepTime: number;
+  recipeServings: number;
   ingredients: string[];
   instructions: string[];
   macros: {
@@ -29,6 +30,7 @@ interface RecipeFormData {
   description: string;
   category: 'breakfast' | 'lunch' | 'dinner' | 'snack';
   prepTime: number;
+  recipeServings: number;
   ingredients: string[];
   instructions: string[];
   macros: {
@@ -53,6 +55,7 @@ export default function EditRecipeForm({ recipe }: EditRecipeFormProps) {
     description: recipe.description,
     category: recipe.category,
     prepTime: recipe.prepTime,
+    recipeServings: recipe.recipeServings || 1,
     ingredients: [...recipe.ingredients],
     instructions: [...recipe.instructions],
     macros: { ...recipe.macros },
@@ -207,6 +210,20 @@ export default function EditRecipeForm({ recipe }: EditRecipeFormProps) {
           type="number"
           value={formData.prepTime}
           onChange={(e) => handleInputChange('prepTime', parseInt(e.target.value) || 0)}
+          className="w-full max-w-xs px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-green-500 focus:border-green-500"
+          min="1"
+          required
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-2">
+          Recipe Servings (yield) *
+        </label>
+        <input
+          type="number"
+          value={formData.recipeServings}
+          onChange={(e) => handleInputChange('recipeServings', parseInt(e.target.value) || 1)}
           className="w-full max-w-xs px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-green-500 focus:border-green-500"
           min="1"
           required

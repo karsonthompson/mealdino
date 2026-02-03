@@ -34,6 +34,16 @@ const MealPlanSchema = new mongoose.Schema(
         maxlength: [200, 'Notes cannot be more than 200 characters'],
         default: ''
       },
+      plannedServings: {
+        type: Number,
+        min: 1,
+        max: 50,
+        default: 1
+      },
+      excludeFromShopping: {
+        type: Boolean,
+        default: false
+      },
       // Optional: track if this is leftovers, meal prep, etc.
       source: {
         type: String,
@@ -66,6 +76,16 @@ const MealPlanSchema = new mongoose.Schema(
         min: 1,
         max: 20,
         default: 1
+      },
+      plannedServings: {
+        type: Number,
+        min: 1,
+        max: 50,
+        default: 1
+      },
+      excludeFromShopping: {
+        type: Boolean,
+        default: false
       },
       // What this prep is for
       purpose: {

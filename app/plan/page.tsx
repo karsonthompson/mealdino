@@ -9,6 +9,7 @@ interface Recipe {
   title: string;
   category: string;
   prepTime: number;
+  recipeServings: number;
   macros: {
     calories: number;
     protein: number;
@@ -22,6 +23,8 @@ interface Meal {
   recipe: Recipe;
   notes: string;
   source: 'fresh' | 'meal_prep' | 'leftovers' | 'frozen';
+  plannedServings: number;
+  excludeFromShopping: boolean;
 }
 
 interface CookingSession {
@@ -29,6 +32,8 @@ interface CookingSession {
   notes: string;
   timeSlot: 'morning' | 'afternoon' | 'evening';
   servings: number;
+  plannedServings: number;
+  excludeFromShopping: boolean;
   purpose: 'meal_prep' | 'batch_cooking' | 'weekly_prep' | 'daily_cooking';
 }
 
@@ -175,6 +180,7 @@ export default async function PlanPage({
               <nav className="flex flex-wrap justify-center sm:justify-end space-x-4 sm:space-x-8">
                 <Link href="/recipes" className="text-gray-300 hover:text-green-400 font-medium text-sm sm:text-base">Recipes</Link>
                 <Link href="/plan" className="text-green-400 font-medium text-sm sm:text-base">Plan</Link>
+                <Link href="/shopping" className="text-gray-300 hover:text-green-400 font-medium text-sm sm:text-base">Shopping</Link>
                 <Link href="/dashboard" className="text-gray-300 hover:text-green-400 font-medium text-sm sm:text-base">Dashboard</Link>
               </nav>
               <div className="w-full sm:w-auto flex justify-center">

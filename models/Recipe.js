@@ -36,6 +36,12 @@ const RecipeSchema = new mongoose.Schema(
       type: Number, // in minutes
       required: [true, 'Please provide prep time'],
     },
+    recipeServings: {
+      type: Number,
+      required: [true, 'Please provide recipe servings'],
+      min: [1, 'Recipe servings must be at least 1'],
+      default: 1,
+    },
     ingredients: {
       type: [String], // array of strings
       required: [true, 'Please provide ingredients'],

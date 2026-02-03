@@ -50,6 +50,13 @@ export async function PUT(request, { params }) {
     const userId = session.user.id;
     const body = await request.json();
 
+    if (body.recipeServings !== undefined) {
+      const parsedRecipeServings = Number(body.recipeServings);
+      body.recipeServings = Number.isFinite(parsedRecipeServings) && parsedRecipeServings > 0
+        ? parsedRecipeServings
+        : 1;
+    }
+
     const updatedRecipe = await updateUserRecipe(id, userId, body);
 
     return Response.json({

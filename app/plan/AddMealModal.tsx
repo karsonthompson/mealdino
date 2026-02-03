@@ -22,6 +22,7 @@ interface Recipe {
   title: string;
   category: string;
   prepTime: number;
+  recipeServings: number;
   userId: string | null;
   isGlobal: boolean;
   macros: {
@@ -41,7 +42,7 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealM
   const [mealType, setMealType] = useState('lunch');
   const [mealSource, setMealSource] = useState('fresh');
   const [timeSlot, setTimeSlot] = useState('afternoon');
-  const [servings, setServings] = useState(4);
+  const [plannedServings, setPlannedServings] = useState(1);
   const [purpose, setPurpose] = useState('daily_cooking');
   const [notes, setNotes] = useState('');
 
@@ -66,6 +67,7 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealM
         setRecipes(data.data);
         if (data.data.length > 0) {
           setSelectedRecipe(data.data[0]._id);
+          setPlannedServings(data.data[0].recipeServings || 1);
         }
       }
     } catch (error) {
@@ -81,7 +83,8 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealM
     setMealType('lunch');
     setMealSource('fresh');
     setTimeSlot('afternoon');
-    setServings(4);
+    const selected = recipes.find((recipe) => recipe._id === selectedRecipe);
+    setPlannedServings(selected?.recipeServings || recipes[0]?.recipeServings || 1);
     setPurpose('daily_cooking');
     setNotes('');
   };
@@ -99,10 +102,11 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealM
         // Add type-specific fields
         ...(planType === 'meal' ? {
           meal_type: mealType,
-          source: mealSource
+          source: mealSource,
+          planned_servings: plannedServings
         } : {
           time_slot: timeSlot,
-          servings,
+          planned_servings: plannedServings,
           purpose
         })
       };
@@ -170,7 +174,14 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealM
                 <>
                   <select
                     value={selectedRecipe}
-                    onChange={(e) => setSelectedRecipe(e.target.value)}
+                    onChange={(e) => {
+                      const nextRecipeId = e.target.value;
+                      setSelectedRecipe(nextRecipeId);
+                      const nextRecipe = recipes.find((recipe) => recipe._id === nextRecipeId);
+                      if (nextRecipe) {
+                        setPlannedServings(nextRecipe.recipeServings || 1);
+                      }
+                    }}
                     className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                     required
                   >
@@ -183,9 +194,9 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealM
                   {selectedRecipeData && (
                     <p className="text-gray-400 text-xs sm:text-sm mt-1">
                       <span className={`inline-block px-2 py-1 rounded text-xs mr-2 ${selectedRecipeData.isGlobal ? 'bg-blue-900 text-blue-300' : 'bg-green-900 text-green-300'}`}>
-                        {selectedRecipeData.isGlobal ? 'Global Recipe' : 'Your Recipe'}
+                      {selectedRecipeData.isGlobal ? 'Global Recipe' : 'Your Recipe'}
                       </span>
-                      {selectedRecipeData.category} • {selectedRecipeData.prepTime} min • {selectedRecipeData.macros.calories} cal
+                      {selectedRecipeData.category} • {selectedRecipeData.prepTime} min • {selectedRecipeData.macros.calories} cal • serves {selectedRecipeData.recipeServings || 1}
                     </p>
                   )}
                 </>
@@ -274,6 +285,17 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealM
                     <option value="frozen">Frozen</option>
                   </select>
                 </div>
+                <div>
+                  <label className="block text-white font-medium mb-2 text-sm sm:text-base">Planned Servings</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={plannedServings}
+                    onChange={(e) => setPlannedServings(parseInt(e.target.value) || 1)}
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
               </div>
             ) : (
               <div className="space-y-3 sm:space-y-4">
@@ -290,13 +312,13 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealM
                   </select>
                 </div>
                 <div>
-                  <label className="block text-white font-medium mb-2 text-sm sm:text-base">Servings</label>
+                  <label className="block text-white font-medium mb-2 text-sm sm:text-base">Planned Servings</label>
                   <input
                     type="number"
                     min="1"
-                    max="20"
-                    value={servings}
-                    onChange={(e) => setServings(parseInt(e.target.value))}
+                    max="50"
+                    value={plannedServings}
+                    onChange={(e) => setPlannedServings(parseInt(e.target.value) || 1)}
                     className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                 </div>

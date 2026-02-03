@@ -52,13 +52,18 @@ export async function POST(request) {
 
     if (type === 'meal') {
       // Add meal to plan
-      const { meal_type = 'lunch', source = 'fresh' } = data;
+      const { meal_type = 'lunch', source = 'fresh', planned_servings } = data;
+      const parsedPlannedServings = Number(planned_servings);
+      const plannedServings = Number.isFinite(parsedPlannedServings) && parsedPlannedServings > 0
+        ? parsedPlannedServings
+        : 1;
 
       const mealData = {
         type: meal_type,
         recipe: recipe_id,
         notes,
-        source
+        source,
+        plannedServings
       };
 
       result = await addMealToPlan(date, userId, mealData);
@@ -67,14 +72,20 @@ export async function POST(request) {
       const {
         time_slot = 'afternoon',
         servings = 4,
+        planned_servings,
         purpose = 'daily_cooking'
       } = data;
+      const parsedPlannedServings = Number(planned_servings ?? servings);
+      const plannedServings = Number.isFinite(parsedPlannedServings) && parsedPlannedServings > 0
+        ? parsedPlannedServings
+        : 1;
 
       const sessionData = {
         recipe: recipe_id,
         notes,
         timeSlot: time_slot,
-        servings,
+        servings: plannedServings,
+        plannedServings,
         purpose
       };
 

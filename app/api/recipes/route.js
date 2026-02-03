@@ -55,6 +55,11 @@ export async function POST(request) {
       );
     }
 
+    const parsedRecipeServings = Number(recipeData.recipeServings);
+    recipeData.recipeServings = Number.isFinite(parsedRecipeServings) && parsedRecipeServings > 0
+      ? parsedRecipeServings
+      : 1;
+
     const newRecipe = await createUserRecipe(userId, recipeData);
 
     return Response.json({

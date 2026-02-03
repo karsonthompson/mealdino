@@ -46,6 +46,9 @@ export default async function Dashboard() {
                     <p className="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto px-4 sm:px-0">
                         Your personal hub for meal planning, recipe management, and cooking organization.
                     </p>
+                    <p className="mt-3 text-xs text-white">
+                        BILLING_BUTTON_DEBUG: {billingLabel} ({billingHref})
+                    </p>
                     <div className="mt-6">
                         <Link
                             href={billingHref}

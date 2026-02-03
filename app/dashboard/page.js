@@ -1,13 +1,15 @@
 import { auth } from "@/auth";
 import ButtonLogin from "@/components/ButtonLogin";
-import ButtonCheckout from "@/components/buttoncheckout";
-import ButtonPortal from "@/components/buttonportal";
 import { checkSubscription } from "@/lib/subscription";
 import Link from "next/link";
 
 export default async function Dashboard() {
     const session = await auth();
     const { isSubscribed } = await checkSubscription();
+    const billingHref = isSubscribed
+        ? "/api/billing/create-portal"
+        : "/api/billing/create-checkout";
+    const billingLabel = isSubscribed ? "Manage Billing" : "Checkout";
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 to-slate-800">
@@ -43,7 +45,12 @@ export default async function Dashboard() {
                         Your personal hub for meal planning, recipe management, and cooking organization.
                     </p>
                     <div className="mt-6">
-                        {isSubscribed ? <ButtonPortal /> : <ButtonCheckout />}
+                        <Link
+                            href={billingHref}
+                            className="inline-flex items-center rounded-lg bg-green-500 px-5 py-3 font-semibold text-gray-900 hover:bg-green-400"
+                        >
+                            {billingLabel}
+                        </Link>
                     </div>
                 </div>
 
@@ -65,7 +72,12 @@ export default async function Dashboard() {
                                 ? "Manage your subscription and payment details."
                                 : "Start Stripe checkout directly from your dashboard"}
                         </p>
-                        {isSubscribed ? <ButtonPortal /> : <ButtonCheckout />}
+                        <Link
+                            href={billingHref}
+                            className="inline-flex items-center rounded-lg bg-green-500 px-5 py-3 font-semibold text-gray-900 hover:bg-green-400"
+                        >
+                            {billingLabel}
+                        </Link>
                     </div>
 
                     <div className="bg-gray-800 rounded-lg p-4 sm:p-6 border border-gray-700">

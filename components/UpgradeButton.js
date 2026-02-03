@@ -1,27 +1,17 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function UpgradeButton() {
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const handleUpgrade = async () => {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/stripe/checkout', {
-        method: 'POST',
-      });
-
-      const { url, error } = await res.json();
-
-      if (error) {
-        alert('Failed to start checkout');
-        setLoading(false);
-        return;
-      }
-
-      window.location.href = url;
+      router.push('/subscribe');
     } catch (err) {
       console.error(err);
       alert('Something went wrong');

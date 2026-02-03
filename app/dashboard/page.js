@@ -1,9 +1,13 @@
 import { auth } from "@/auth";
 import ButtonLogin from "@/components/ButtonLogin";
+import ButtonCheckout from "@/components/buttoncheckout";
+import ButtonPortal from "@/components/buttonportal";
+import { checkSubscription } from "@/lib/subscription";
 import Link from "next/link";
 
 export default async function Dashboard() {
     const session = await auth();
+    const { isSubscribed } = await checkSubscription();
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 to-slate-800">
@@ -38,6 +42,9 @@ export default async function Dashboard() {
                     <p className="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto px-4 sm:px-0">
                         Your personal hub for meal planning, recipe management, and cooking organization.
                     </p>
+                    <div className="mt-6">
+                        {isSubscribed ? <ButtonPortal /> : <ButtonCheckout />}
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -50,6 +57,16 @@ export default async function Dashboard() {
                         <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">Meal Planning</h3>
                         <p className="text-sm sm:text-base text-gray-300">Plan your meals and cooking sessions</p>
                     </Link>
+
+                    <div className="bg-gray-800 rounded-lg p-4 sm:p-6 border border-gray-700">
+                        <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">Upgrade to Premium</h3>
+                        <p className="text-sm sm:text-base text-gray-300 mb-4">
+                            {isSubscribed
+                                ? "Manage your subscription and payment details."
+                                : "Start Stripe checkout directly from your dashboard"}
+                        </p>
+                        {isSubscribed ? <ButtonPortal /> : <ButtonCheckout />}
+                    </div>
 
                     <div className="bg-gray-800 rounded-lg p-4 sm:p-6 border border-gray-700">
                         <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">My Favorites</h3>

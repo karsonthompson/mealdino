@@ -13,9 +13,23 @@ const UserSchema = new mongoose.Schema(
     // Stripe fields
     stripeCustomerId: String,
     subscriptionId: String,
+    hasAccess: {
+      type: Boolean,
+      default: false,
+    },
     subscriptionStatus: {
       type: String,
-      enum: ['active', 'canceled', 'past_due', 'trialing', null],
+      enum: [
+        'trialing',
+        'active',
+        'past_due',
+        'canceled',
+        'unpaid',
+        'incomplete',
+        'incomplete_expired',
+        'paused',
+        null,
+      ],
       default: null,
     },
   },

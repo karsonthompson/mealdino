@@ -1,9 +1,15 @@
 import { auth } from "@/auth";
 import ButtonLogin from "@/components/ButtonLogin";
+import { checkSubscription } from "@/lib/subscription";
 import Link from "next/link";
 
 export default async function Dashboard() {
     const session = await auth();
+    const { isSubscribed } = await checkSubscription();
+    const billingHref = isSubscribed
+        ? "/api/billing/create-portal"
+        : "/api/billing/create-checkout";
+    const billingLabel = isSubscribed ? "Manage Billing" : "Checkout";
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 to-slate-800">
@@ -20,6 +26,7 @@ export default async function Dashboard() {
                             <nav className="flex flex-wrap justify-center sm:justify-end space-x-4 sm:space-x-8">
                                 <Link href="/recipes" className="text-gray-300 hover:text-green-400 font-medium text-sm sm:text-base">Recipes</Link>
                                 <Link href="/plan" className="text-gray-300 hover:text-green-400 font-medium text-sm sm:text-base">Plan</Link>
+                                <Link href="/shopping" className="text-gray-300 hover:text-green-400 font-medium text-sm sm:text-base">Shopping</Link>
                                 <Link href="/dashboard" className="text-green-400 font-medium text-sm sm:text-base">Dashboard</Link>
                                 <Link href="/pricing" className="text-gray-300 hover:text-green-400 font-medium text-sm sm:text-base">Pricing</Link>
                             </nav>
@@ -39,6 +46,14 @@ export default async function Dashboard() {
                     <p className="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto px-4 sm:px-0">
                         Your personal hub for meal planning, recipe management, and cooking organization.
                     </p>
+                    <div className="mt-6">
+                        <Link
+                            href={billingHref}
+                            className="inline-flex items-center rounded-lg bg-green-500 px-5 py-3 font-semibold text-gray-900 hover:bg-green-400"
+                        >
+                            {billingLabel}
+                        </Link>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -51,6 +66,26 @@ export default async function Dashboard() {
                         <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">Meal Planning</h3>
                         <p className="text-sm sm:text-base text-gray-300">Plan your meals and cooking sessions</p>
                     </Link>
+
+                    <Link href="/shopping" className="bg-gray-800 rounded-lg p-4 sm:p-6 border border-gray-700 hover:border-green-400 transition-colors">
+                        <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">Shopping List</h3>
+                        <p className="text-sm sm:text-base text-gray-300">Auto-generate groceries from your plan</p>
+                    </Link>
+
+                    <div className="bg-gray-800 rounded-lg p-4 sm:p-6 border border-gray-700">
+                        <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">Upgrade to Premium</h3>
+                        <p className="text-sm sm:text-base text-gray-300 mb-4">
+                            {isSubscribed
+                                ? "Manage your subscription and payment details."
+                                : "Start Stripe checkout directly from your dashboard"}
+                        </p>
+                        <Link
+                            href={billingHref}
+                            className="inline-flex items-center rounded-lg bg-green-500 px-5 py-3 font-semibold text-gray-900 hover:bg-green-400"
+                        >
+                            {billingLabel}
+                        </Link>
+                    </div>
 
                     <div className="bg-gray-800 rounded-lg p-4 sm:p-6 border border-gray-700">
                         <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">My Favorites</h3>

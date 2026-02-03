@@ -8,7 +8,7 @@ const UserSchema = new mongoose.Schema(
     emailVerified: { type: Date },
     image: { type: String },
 
-    // Stripe subscription fields
+    // Stripe/customer fields (superset for legacy + current flows)
     stripeCustomerId: {
       type: String,
       default: null,
@@ -18,10 +18,18 @@ const UserSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    subscriptionId: {
+      type: String,
+      default: null,
+    },
+    hasAccess: {
+      type: Boolean,
+      default: false,
+    },
     subscriptionStatus: {
       type: String,
-      enum: ['active', 'canceled', 'past_due', 'trialing', 'none'],
-      default: 'none',
+      enum: ['trialing', 'active', 'past_due', 'canceled', 'unpaid', 'incomplete', 'incomplete_expired', 'paused', 'none', null],
+      default: null,
     },
     subscriptionPlan: {
       type: String,

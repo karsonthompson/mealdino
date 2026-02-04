@@ -102,15 +102,21 @@ export default function ShoppingPageClient({ defaultStartDate, defaultEndDate }:
   const [checkedKeys, setCheckedKeys] = useState<string[]>([]);
   const [manualItems, setManualItems] = useState<ManualShoppingItem[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastActionLabel, setToastActionLabel] = useState<string | null>(null);
+  const [toastAction, setToastAction] = useState<(() => void) | null>(null);
 
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
   const isDateRangeValid = useMemo(() => startDate <= endDate, [startDate, endDate]);
 
-  const showToast = (message: string) => {
+  const showToast = (message: string, options?: { actionLabel?: string; action?: () => void; durationMs?: number }) => {
     setToastMessage(message);
+    setToastActionLabel(options?.actionLabel || null);
+    setToastAction(() => options?.action || null);
     setTimeout(() => {
       setToastMessage(null);
-    }, 1800);
+      setToastActionLabel(null);
+      setToastAction(null);
+    }, options?.durationMs || 1800);
   };
 
   const applyPreset = (days: number) => {
@@ -312,11 +318,32 @@ export default function ShoppingPageClient({ defaultStartDate, defaultEndDate }:
   };
 
   const removeManualItem = async (id: string) => {
+    const removedItem = manualItems.find((item) => item.id === id);
+    const removedIndex = manualItems.findIndex((item) => item.id === id);
+    if (!removedItem || removedIndex < 0) return;
+
+    const wasChecked = checkedKeys.includes(getManualChecklistKey(id));
     const nextManualItems = manualItems.filter((item) => item.id !== id);
     const nextChecked = checkedKeys.filter((key) => key !== getManualChecklistKey(id));
     setManualItems(nextManualItems);
     setCheckedKeys(nextChecked);
     await saveChecklist(nextChecked, nextManualItems);
+
+    showToast('Manual item removed', {
+      actionLabel: 'Undo',
+      action: async () => {
+        const restoredManualItems = [...nextManualItems];
+        restoredManualItems.splice(removedIndex, 0, removedItem);
+        const restoredChecked = wasChecked
+          ? [...nextChecked, getManualChecklistKey(id)]
+          : nextChecked;
+        setManualItems(restoredManualItems);
+        setCheckedKeys(restoredChecked);
+        await saveChecklist(restoredChecked, restoredManualItems);
+        showToast('Removal undone');
+      },
+      durationMs: 5000
+    });
   };
 
   const updateIngredientAisleOverride = async (normalizedName: string | undefined, aisle: string) => {
@@ -476,6 +503,15 @@ export default function ShoppingPageClient({ defaultStartDate, defaultEndDate }:
         <p className="text-xs text-gray-400 mt-4">
           Ingredient scaling uses planned servings divided by each recipe&apos;s serving yield.
         </p>
+      </section>
+
+      <section className="bg-gray-800/70 rounded-xl border border-gray-700 p-4">
+        <p className="text-sm text-white font-medium mb-2">Quick Start</p>
+        <ul className="text-xs text-gray-300 space-y-1">
+          <li>1) Build your list for 7, 14, or a custom date range.</li>
+          <li>2) Check items as you shop, and add any missing manual items.</li>
+          <li>3) Copy/download the list when you are ready to head out.</li>
+        </ul>
       </section>
 
       {error && (
@@ -685,8 +721,17 @@ export default function ShoppingPageClient({ defaultStartDate, defaultEndDate }:
       )}
 
       {toastMessage && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-green-600 text-white text-sm px-4 py-2 rounded-lg shadow-lg z-50">
-          {toastMessage}
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-green-600 text-white text-sm px-4 py-2 rounded-lg shadow-lg z-50 flex items-center gap-3">
+          <span>{toastMessage}</span>
+          {toastAction && toastActionLabel && (
+            <button
+              type="button"
+              onClick={toastAction}
+              className="px-2 py-1 text-xs rounded bg-green-800 hover:bg-green-700"
+            >
+              {toastActionLabel}
+            </button>
+          )}
         </div>
       )}
     </div>

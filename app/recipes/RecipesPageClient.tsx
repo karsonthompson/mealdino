@@ -182,14 +182,24 @@ export default function RecipesPageClient({ initialRecipes, isAuthenticated }: R
 
           {/* Add Recipe Button - only show if authenticated */}
           {isAuthenticated && (
-            <Link
-              href="/recipes/add"
-              className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
-            >
-              <span>+</span>
-              <span className="hidden sm:inline">Add Recipe</span>
-              <span className="sm:hidden">Add</span>
-            </Link>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Link
+                href="/recipes/import"
+                className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
+              >
+                <span>⇪</span>
+                <span className="hidden sm:inline">Import Recipes</span>
+                <span className="sm:hidden">Import</span>
+              </Link>
+              <Link
+                href="/recipes/add"
+                className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
+              >
+                <span>+</span>
+                <span className="hidden sm:inline">Add Recipe</span>
+                <span className="sm:hidden">Add</span>
+              </Link>
+            </div>
           )}
         </div>
       </div>

@@ -77,6 +77,11 @@ interface PlanPageClientProps {
   mealPlansByDate: { [key: string]: MealPlan };
 }
 
+interface DaySnapshot {
+  date: string;
+  plan?: MealPlan;
+}
+
 function serializeDayPlan(plan?: MealPlan) {
   if (!plan) {
     return { meals: [], cookingSessions: [] };
@@ -118,6 +123,7 @@ export default function PlanPageClient({
   const [recentlySavedServingsKey, setRecentlySavedServingsKey] = useState<string | null>(null);
   const [updatingShoppingToggleKey, setUpdatingShoppingToggleKey] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [actionUndo, setActionUndo] = useState<(() => Promise<void> | void) | null>(null);
   const [bulkSaving, setBulkSaving] = useState(false);
 
   const router = useRouter();
@@ -148,7 +154,36 @@ export default function PlanPageClient({
 
   const showMessage = (message: string) => {
     setActionMessage(message);
+    setActionUndo(null);
     setTimeout(() => setActionMessage(null), 1600);
+  };
+
+  const showUndoMessage = (message: string, onUndo: () => Promise<void> | void) => {
+    setActionMessage(message);
+    setActionUndo(() => onUndo);
+    setTimeout(() => {
+      setActionMessage(null);
+      setActionUndo(null);
+    }, 5000);
+  };
+
+  const restoreSnapshots = async (snapshots: DaySnapshot[]) => {
+    if (snapshots.length === 0) return;
+    setBulkSaving(true);
+    try {
+      const nextMap = { ...localMealPlansByDate };
+      for (const snapshot of snapshots) {
+        const restored = await saveDayPlan(snapshot.date, snapshot.plan);
+        nextMap[snapshot.date] = restored;
+      }
+      setLocalMealPlansByDate(nextMap);
+      showMessage('Undo complete');
+    } catch (error) {
+      console.error('Failed to restore snapshots:', error);
+      alert('Failed to undo previous action.');
+    } finally {
+      setBulkSaving(false);
+    }
   };
 
   const handleViewChange = (newView: 'weekly' | 'monthly') => {
@@ -295,12 +330,24 @@ export default function PlanPageClient({
 
     const sourceDate = upcomingDays[currentIndex - 1].date;
     const sourcePlan = localMealPlansByDate[sourceDate];
+    const targetCurrentPlan = localMealPlansByDate[selectedDay.date];
+    const targetHasContent = (targetCurrentPlan?.meals?.length || 0) > 0 || (targetCurrentPlan?.cookingSessions?.length || 0) > 0;
+    if (targetHasContent) {
+      const confirmed = window.confirm('This will overwrite the currently selected day. Continue?');
+      if (!confirmed) return;
+    }
 
     try {
       setBulkSaving(true);
+      const snapshot: DaySnapshot = {
+        date: selectedDay.date,
+        plan: targetCurrentPlan
+      };
       const updated = await saveDayPlan(selectedDay.date, sourcePlan);
       setLocalMealPlansByDate((prev) => ({ ...prev, [selectedDay.date]: updated }));
-      showMessage('Copied previous day');
+      showUndoMessage('Copied previous day', async () => {
+        await restoreSnapshots([snapshot]);
+      });
     } catch (error) {
       console.error('Failed to copy previous day:', error);
       alert('Failed to copy previous day.');
@@ -329,6 +376,21 @@ export default function PlanPageClient({
     try {
       setBulkSaving(true);
       const nextMap = { ...localMealPlansByDate };
+      const snapshots: DaySnapshot[] = targetDays.map((day) => ({
+        date: day.date,
+        plan: localMealPlansByDate[day.date]
+      }));
+      const hasAnyExisting = snapshots.some((snapshot) => (
+        (snapshot.plan?.meals?.length || 0) > 0 || (snapshot.plan?.cookingSessions?.length || 0) > 0
+      ));
+
+      if (hasAnyExisting) {
+        const confirmed = window.confirm('This will overwrite some existing days in the range. Continue?');
+        if (!confirmed) {
+          setBulkSaving(false);
+          return;
+        }
+      }
 
       for (const day of targetDays) {
         const response = await fetch('/api/meal-plans/day', {
@@ -346,7 +408,9 @@ export default function PlanPageClient({
       }
 
       setLocalMealPlansByDate(nextMap);
-      showMessage('Repeated to remaining days');
+      showUndoMessage('Repeated to remaining days', async () => {
+        await restoreSnapshots(snapshots);
+      });
     } catch (error) {
       console.error('Failed to repeat day:', error);
       alert('Failed to repeat selected day.');
@@ -493,6 +557,15 @@ export default function PlanPageClient({
 
       {viewMode === 'weekly' ? (
         <div className="space-y-6">
+          <section className="bg-gray-800/70 rounded-xl border border-gray-700 p-4">
+            <p className="text-sm text-white font-medium mb-2">Quick Start</p>
+            <ul className="text-xs text-gray-300 space-y-1">
+              <li>1) Pick a horizon (7/14/custom) and select a day from the timeline.</li>
+              <li>2) Add meals/sessions, adjust servings, and exclude leftovers from shopping.</li>
+              <li>3) Use Copy/Repeat actions to plan faster, then generate your shopping list.</li>
+            </ul>
+          </section>
+
           <section className="bg-gray-800 rounded-xl border border-gray-700 p-4 sm:p-6">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
@@ -601,7 +674,24 @@ export default function PlanPageClient({
                 </div>
               </div>
 
-              {actionMessage && <p className="text-xs text-green-300 mb-3">{actionMessage}</p>}
+              {actionMessage && (
+                <div className="mb-3 flex items-center gap-2">
+                  <p className="text-xs text-green-300">{actionMessage}</p>
+                  {actionUndo && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const callback = actionUndo;
+                        setActionUndo(null);
+                        if (callback) await callback();
+                      }}
+                      className="px-2 py-1 text-[10px] rounded bg-green-800 hover:bg-green-700 text-white"
+                    >
+                      Undo
+                    </button>
+                  )}
+                </div>
+              )}
 
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 <div>

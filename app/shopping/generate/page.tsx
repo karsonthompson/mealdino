@@ -1,52 +1,19 @@
 import { auth } from '@/auth';
 import ButtonLogin from '@/components/ButtonLogin';
 import Link from 'next/link';
-import ShoppingPageClient from './ShoppingPageClient';
-import { formatDateForDB } from '@/lib/mealPlans';
+import { getAllRecipes } from '@/lib/recipes';
+import GenerateShoppingListClient from './GenerateShoppingListClient';
 
-interface SelectedRecipeInput {
-  recipeId: string;
-  plannedServings: number;
+interface RecipeSummary {
+  _id: string;
+  title: string;
+  category: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  prepTime: number;
+  recipeServings: number;
+  isGlobal: boolean;
 }
 
-function parseSelectedRecipesParam(raw?: string): SelectedRecipeInput[] {
-  if (!raw) return [];
-
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-
-    return parsed
-      .map((entry) => ({
-        recipeId: String(entry?.recipeId || '').trim(),
-        plannedServings: Number(entry?.plannedServings)
-      }))
-      .filter((entry) => entry.recipeId && Number.isFinite(entry.plannedServings) && entry.plannedServings > 0)
-      .map((entry) => ({
-        recipeId: entry.recipeId,
-        plannedServings: Math.max(1, Math.round(entry.plannedServings * 100) / 100)
-      }));
-  } catch {
-    return [];
-  }
-}
-
-function getDefaultDateRange() {
-  const startDate = new Date();
-  const endDate = new Date();
-  endDate.setDate(startDate.getDate() + 13);
-
-  return {
-    start: formatDateForDB(startDate),
-    end: formatDateForDB(endDate)
-  };
-}
-
-export default async function ShoppingPage({
-  searchParams
-}: {
-  searchParams: { source?: string; selectedRecipes?: string };
-}) {
+export default async function GenerateShoppingPage() {
   const session = await auth();
 
   if (!session || !session.user) {
@@ -61,11 +28,15 @@ export default async function ShoppingPage({
     );
   }
 
-  const defaults = getDefaultDateRange();
-  const sourceMode = searchParams.source === 'recipes' ? 'recipes' : 'plan';
-  const selectedRecipes = sourceMode === 'recipes'
-    ? parseSelectedRecipesParam(searchParams.selectedRecipes)
-    : [];
+  const recipes = await getAllRecipes(session.user.id);
+  const recipeSummaries: RecipeSummary[] = recipes.map((recipe) => ({
+    _id: recipe._id,
+    title: recipe.title,
+    category: recipe.category,
+    prepTime: recipe.prepTime,
+    recipeServings: recipe.recipeServings || 1,
+    isGlobal: recipe.isGlobal
+  }));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-slate-800">
@@ -97,19 +68,14 @@ export default async function ShoppingPage({
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <div className="text-center mb-8 sm:mb-10">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-3 sm:mb-4">
-            Smart <span className="text-green-400">Shopping List</span>
+            Generate From <span className="text-green-400">Recipes</span>
           </h2>
           <p className="text-lg sm:text-xl text-gray-300 max-w-3xl mx-auto px-4 sm:px-0">
-            Pick your planning window and MealDino will aggregate ingredients from your planned meals and cooking sessions.
+            Pick the recipes you want to shop for, set planned servings, and generate your shopping list instantly.
           </p>
         </div>
 
-        <ShoppingPageClient
-          defaultStartDate={defaults.start}
-          defaultEndDate={defaults.end}
-          sourceMode={sourceMode}
-          selectedRecipes={selectedRecipes}
-        />
+        <GenerateShoppingListClient recipes={recipeSummaries} />
       </main>
     </div>
   );

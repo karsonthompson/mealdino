@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 
 interface ShoppingItem {
   key: string;
@@ -35,6 +36,8 @@ interface ShoppingData {
     start: string;
     end: string;
   };
+  source?: 'plan' | 'recipes';
+  selectedRecipeCount?: number;
   includeMeals: boolean;
   includeCookingSessions: boolean;
   mealPlanCount: number;
@@ -61,6 +64,8 @@ interface ApiResponse {
 interface ShoppingPageClientProps {
   defaultStartDate: string;
   defaultEndDate: string;
+  sourceMode: 'plan' | 'recipes';
+  selectedRecipes: Array<{ recipeId: string; plannedServings: number }>;
 }
 
 const TOTAL_KEY_PREFIX = 'total:';
@@ -89,7 +94,12 @@ function getManualChecklistKey(id: string): string {
   return `manual:${id}`;
 }
 
-export default function ShoppingPageClient({ defaultStartDate, defaultEndDate }: ShoppingPageClientProps) {
+export default function ShoppingPageClient({
+  defaultStartDate,
+  defaultEndDate,
+  sourceMode,
+  selectedRecipes
+}: ShoppingPageClientProps) {
   const [startDate, setStartDate] = useState(defaultStartDate);
   const [endDate, setEndDate] = useState(defaultEndDate);
   const [includeMeals, setIncludeMeals] = useState(true);
@@ -106,7 +116,9 @@ export default function ShoppingPageClient({ defaultStartDate, defaultEndDate }:
   const [toastAction, setToastAction] = useState<(() => void) | null>(null);
 
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
-  const isDateRangeValid = useMemo(() => startDate <= endDate, [startDate, endDate]);
+  const isRecipeMode = sourceMode === 'recipes';
+  const selectedRecipesPayload = useMemo(() => JSON.stringify(selectedRecipes || []), [selectedRecipes]);
+  const isDateRangeValid = useMemo(() => isRecipeMode || startDate <= endDate, [isRecipeMode, startDate, endDate]);
 
   const showToast = (message: string, options?: { actionLabel?: string; action?: () => void; durationMs?: number }) => {
     setToastMessage(message);
@@ -128,14 +140,24 @@ export default function ShoppingPageClient({ defaultStartDate, defaultEndDate }:
     setEndDate(formatDateForInput(end));
   };
 
-  const buildChecklistUrl = () => {
-    const params = new URLSearchParams({
-      start: startDate,
-      end: endDate,
-      includeMeals: String(includeMeals),
-      includeCookingSessions: String(includeCookingSessions)
-    });
+  const buildRequestParams = () => {
+    const params = new URLSearchParams();
 
+    if (isRecipeMode) {
+      params.set('source', 'recipes');
+      params.set('selectedRecipes', selectedRecipesPayload);
+      return params;
+    }
+
+    params.set('start', startDate);
+    params.set('end', endDate);
+    params.set('includeMeals', String(includeMeals));
+    params.set('includeCookingSessions', String(includeCookingSessions));
+    return params;
+  };
+
+  const buildChecklistUrl = () => {
+    const params = buildRequestParams();
     return `/api/shopping-checklist?${params.toString()}`;
   };
 
@@ -162,7 +184,7 @@ export default function ShoppingPageClient({ defaultStartDate, defaultEndDate }:
   };
 
   const loadShoppingList = async () => {
-    if (!isDateRangeValid) {
+    if (!isRecipeMode && !isDateRangeValid) {
       setError('Start date must be on or before end date.');
       return;
     }
@@ -171,12 +193,11 @@ export default function ShoppingPageClient({ defaultStartDate, defaultEndDate }:
     setError(null);
 
     try {
-      const params = new URLSearchParams({
-        start: startDate,
-        end: endDate,
-        includeMeals: String(includeMeals),
-        includeCookingSessions: String(includeCookingSessions)
-      });
+      if (isRecipeMode && selectedRecipes.length === 0) {
+        throw new Error('Pick at least one recipe first.');
+      }
+
+      const params = buildRequestParams();
 
       const response = await fetch(`/api/shopping-list?${params.toString()}`);
       const data = (await response.json()) as ApiResponse;
@@ -229,9 +250,17 @@ export default function ShoppingPageClient({ defaultStartDate, defaultEndDate }:
 
     const lines: string[] = [];
 
-    lines.push(`MealDino Shopping List (${shoppingData.dateRange.start} to ${shoppingData.dateRange.end})`);
+    if (isRecipeMode) {
+      lines.push('MealDino Shopping List (Selected Recipes)');
+    } else {
+      lines.push(`MealDino Shopping List (${shoppingData.dateRange.start} to ${shoppingData.dateRange.end})`);
+    }
     lines.push('');
-    lines.push(`Meal plans: ${shoppingData.mealPlanCount}`);
+    if (isRecipeMode) {
+      lines.push(`Selected recipes: ${shoppingData.selectedRecipeCount || selectedRecipes.length}`);
+    } else {
+      lines.push(`Meal plans: ${shoppingData.mealPlanCount}`);
+    }
     lines.push(`Planned meals: ${shoppingData.stats.plannedMeals}`);
     lines.push(`Cooking sessions: ${shoppingData.stats.cookingSessions}`);
     lines.push(`Planned servings: ${shoppingData.stats.totalPlannedServings}`);
@@ -411,7 +440,9 @@ export default function ShoppingPageClient({ defaultStartDate, defaultEndDate }:
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `shopping-list-${startDate}-to-${endDate}.txt`;
+    link.download = isRecipeMode
+      ? 'shopping-list-selected-recipes.txt'
+      : `shopping-list-${startDate}-to-${endDate}.txt`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -440,65 +471,90 @@ export default function ShoppingPageClient({ defaultStartDate, defaultEndDate }:
   return (
     <div className="space-y-6 sm:space-y-8">
       <section className="bg-gray-800 rounded-xl border border-gray-700 p-4 sm:p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-end">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div>
-            <label className="block text-sm text-gray-300 mb-2">Start Date</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
-            />
+            <p className="text-sm font-semibold text-white">How to build your list</p>
+            <p className="text-xs text-gray-400">
+              {isRecipeMode
+                ? `Using ${selectedRecipes.length} selected recipe(s).`
+                : 'Use your plan dates or switch to recipe picker mode.'}
+            </p>
           </div>
-
-          <div>
-            <label className="block text-sm text-gray-300 mb-2">End Date</label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
-            />
-          </div>
-
-          <div className="lg:col-span-2">
-            <label className="block text-sm text-gray-300 mb-2">Include</label>
-            <div className="flex flex-wrap gap-4 min-h-10 items-center">
-              <label className="inline-flex items-center gap-2 text-gray-200 text-sm">
-                <input
-                  type="checkbox"
-                  checked={includeMeals}
-                  onChange={(e) => setIncludeMeals(e.target.checked)}
-                  className="accent-green-500"
-                />
-                Planned meals
-              </label>
-              <label className="inline-flex items-center gap-2 text-gray-200 text-sm">
-                <input
-                  type="checkbox"
-                  checked={includeCookingSessions}
-                  onChange={(e) => setIncludeCookingSessions(e.target.checked)}
-                  className="accent-green-500"
-                />
-                Cooking sessions
-              </label>
-            </div>
-          </div>
-
-          <button
-            onClick={loadShoppingList}
-            disabled={loading || !isDateRangeValid}
-            className="h-10 bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg px-4"
+          <Link
+            href="/shopping/generate"
+            className="inline-flex items-center justify-center px-3 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 text-white"
           >
-            {loading ? 'Building...' : 'Build List'}
-          </button>
+            Generate from Recipes
+          </Link>
         </div>
 
-        <div className="flex flex-wrap gap-2 mt-4">
-          <button onClick={() => applyPreset(7)} className="px-3 py-1.5 text-xs rounded bg-gray-700 hover:bg-gray-600 text-gray-200">Next 7 days</button>
-          <button onClick={() => applyPreset(14)} className="px-3 py-1.5 text-xs rounded bg-gray-700 hover:bg-gray-600 text-gray-200">Next 14 days</button>
-          <button onClick={() => applyPreset(30)} className="px-3 py-1.5 text-xs rounded bg-gray-700 hover:bg-gray-600 text-gray-200">Next 30 days</button>
-        </div>
+        {isRecipeMode ? (
+          <div className="rounded-lg border border-blue-700/60 bg-blue-900/20 p-3 text-sm text-blue-100">
+            This list is generated from your selected recipes and planned servings, not your calendar plan.
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-end">
+              <div>
+                <label className="block text-sm text-gray-300 mb-2">Start Date</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-300 mb-2">End Date</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+                />
+              </div>
+
+              <div className="lg:col-span-2">
+                <label className="block text-sm text-gray-300 mb-2">Include</label>
+                <div className="flex flex-wrap gap-4 min-h-10 items-center">
+                  <label className="inline-flex items-center gap-2 text-gray-200 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={includeMeals}
+                      onChange={(e) => setIncludeMeals(e.target.checked)}
+                      className="accent-green-500"
+                    />
+                    Planned meals
+                  </label>
+                  <label className="inline-flex items-center gap-2 text-gray-200 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={includeCookingSessions}
+                      onChange={(e) => setIncludeCookingSessions(e.target.checked)}
+                      className="accent-green-500"
+                    />
+                    Cooking sessions
+                  </label>
+                </div>
+              </div>
+
+              <button
+                onClick={loadShoppingList}
+                disabled={loading || !isDateRangeValid}
+                className="h-10 bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg px-4"
+              >
+                {loading ? 'Building...' : 'Build List'}
+              </button>
+            </div>
+
+            <div className="flex flex-wrap gap-2 mt-4">
+              <button onClick={() => applyPreset(7)} className="px-3 py-1.5 text-xs rounded bg-gray-700 hover:bg-gray-600 text-gray-200">Next 7 days</button>
+              <button onClick={() => applyPreset(14)} className="px-3 py-1.5 text-xs rounded bg-gray-700 hover:bg-gray-600 text-gray-200">Next 14 days</button>
+              <button onClick={() => applyPreset(30)} className="px-3 py-1.5 text-xs rounded bg-gray-700 hover:bg-gray-600 text-gray-200">Next 30 days</button>
+            </div>
+          </>
+        )}
 
         <p className="text-xs text-gray-400 mt-4">
           Ingredient scaling uses planned servings divided by each recipe&apos;s serving yield.
@@ -508,7 +564,7 @@ export default function ShoppingPageClient({ defaultStartDate, defaultEndDate }:
       <section className="bg-gray-800/70 rounded-xl border border-gray-700 p-4">
         <p className="text-sm text-white font-medium mb-2">Quick Start</p>
         <ul className="text-xs text-gray-300 space-y-1">
-          <li>1) Build your list for 7, 14, or a custom date range.</li>
+          <li>1) {isRecipeMode ? 'Generate from selected recipes or switch back to date-range mode.' : 'Build your list for 7, 14, or a custom date range.'}</li>
           <li>2) Check items as you shop, and add any missing manual items.</li>
           <li>3) Copy/download the list when you are ready to head out.</li>
         </ul>
@@ -524,8 +580,8 @@ export default function ShoppingPageClient({ defaultStartDate, defaultEndDate }:
         <>
           <section className="grid grid-cols-2 lg:grid-cols-5 gap-3">
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-3">
-              <p className="text-xs text-gray-400">Meal plans</p>
-              <p className="text-lg font-semibold text-white">{shoppingData.mealPlanCount}</p>
+              <p className="text-xs text-gray-400">{isRecipeMode ? 'Selected recipes' : 'Meal plans'}</p>
+              <p className="text-lg font-semibold text-white">{isRecipeMode ? (shoppingData.selectedRecipeCount || selectedRecipes.length) : shoppingData.mealPlanCount}</p>
             </div>
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-3">
               <p className="text-xs text-gray-400">Planned meals</p>

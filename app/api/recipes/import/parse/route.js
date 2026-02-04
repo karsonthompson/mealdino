@@ -1,6 +1,17 @@
 import { auth } from '@/auth';
 import { parseRecipeImportInput } from '@/lib/recipeImport';
 
+async function extractPdfText(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  // Dynamic import avoids loading pdf parser for non-PDF uploads.
+  const pdfParseModule = await import('pdf-parse');
+  const parsePdf = pdfParseModule.default || pdfParseModule;
+  const result = await parsePdf(buffer);
+  return String(result?.text || '');
+}
+
 export async function POST(request) {
   try {
     const session = await auth();
@@ -23,11 +34,29 @@ export async function POST(request) {
       }
 
       if (file && typeof file === 'object' && 'text' in file) {
-        if (!text) {
-          text = await file.text();
-        }
         fileName = file.name || '';
         mimeType = file.type || '';
+
+        if (!text) {
+          const isPdf = fileName.toLowerCase().endsWith('.pdf') || mimeType.toLowerCase().includes('pdf');
+          if (isPdf) {
+            try {
+              text = await extractPdfText(file);
+            } catch (error) {
+              console.error('PDF extraction failed:', error);
+              return Response.json({
+                success: true,
+                data: {
+                  drafts: [],
+                  warnings: ['Could not extract text from this PDF. Try a different PDF or paste the recipe text manually.'],
+                  count: 0
+                }
+              });
+            }
+          } else {
+            text = await file.text();
+          }
+        }
       }
     } else {
       const body = await request.json();

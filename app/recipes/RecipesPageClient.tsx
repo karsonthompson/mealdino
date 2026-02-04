@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import HomePageClient from '../HomePageClient';
+import CreateCollectionModal from '@/components/CreateCollectionModal';
 
 interface Recipe {
   _id: string;
@@ -31,6 +32,13 @@ interface RecipesPageClientProps {
   isAuthenticated: boolean;
 }
 
+interface CollectionSummary {
+  _id: string;
+  name: string;
+  color: string;
+  recipeCount: number;
+}
+
 type RecipeFilter = 'all' | 'my-recipes' | 'global';
 type CategoryFilter = 'all' | 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
@@ -44,6 +52,12 @@ export default function RecipesPageClient({ initialRecipes, isAuthenticated }: R
     global: 0,
     myRecipes: 0
   });
+  const [collections, setCollections] = useState<CollectionSummary[]>([]);
+  const [collectionsLoaded, setCollectionsLoaded] = useState(false);
+  const [loadingCollections, setLoadingCollections] = useState(false);
+  const [collectionsOpen, setCollectionsOpen] = useState(false);
+  const [showCreateCollectionModal, setShowCreateCollectionModal] = useState(false);
+  const collectionsMenuRef = useRef<HTMLDivElement | null>(null);
 
   // Calculate recipe counts
   useEffect(() => {
@@ -56,6 +70,20 @@ export default function RecipesPageClient({ initialRecipes, isAuthenticated }: R
       myRecipes: myRecipesCount
     });
   }, [recipes]);
+
+  useEffect(() => {
+    if (!collectionsOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!collectionsMenuRef.current) return;
+      if (!collectionsMenuRef.current.contains(event.target as Node)) {
+        setCollectionsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [collectionsOpen]);
 
   // Filter recipes by category
   const filteredRecipes = categoryFilter === 'all'
@@ -108,6 +136,56 @@ export default function RecipesPageClient({ initialRecipes, isAuthenticated }: R
   // Handle category filter change
   const handleCategoryFilter = (category: CategoryFilter) => {
     setCategoryFilter(category);
+  };
+
+  const fetchCollections = async () => {
+    if (!isAuthenticated) return;
+    setLoadingCollections(true);
+    try {
+      const response = await fetch('/api/collections');
+      const data = await response.json();
+      if (data.success) {
+        const nextCollections = (data.data || []).map((collection: any) => ({
+          _id: collection._id,
+          name: collection.name,
+          color: collection.color,
+          recipeCount: collection.recipeCount
+        }));
+        setCollections(nextCollections);
+        setCollectionsLoaded(true);
+      }
+    } catch (error) {
+      console.error('Error fetching collections:', error);
+    } finally {
+      setLoadingCollections(false);
+    }
+  };
+
+  const toggleCollectionsMenu = async () => {
+    const nextOpen = !collectionsOpen;
+    setCollectionsOpen(nextOpen);
+    if (nextOpen && !collectionsLoaded && !loadingCollections) {
+      await fetchCollections();
+    }
+  };
+
+  const handleCreateCollection = async (collectionData: { name: string; description: string; color: string }) => {
+    const response = await fetch('/api/collections', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(collectionData),
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to create collection');
+    }
+
+    await fetchCollections();
+    setShowCreateCollectionModal(false);
+    setCollectionsOpen(true);
   };
 
   // Get button classes for filter buttons
@@ -171,13 +249,66 @@ export default function RecipesPageClient({ initialRecipes, isAuthenticated }: R
 
           {/* Collections Link - only show if authenticated */}
           {isAuthenticated && (
-            <Link
-              href="/collections"
-              className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
-            >
-              <span>📂</span>
-              <span>Collections</span>
-            </Link>
+            <div className="relative w-full sm:w-auto" ref={collectionsMenuRef}>
+              <button
+                type="button"
+                onClick={toggleCollectionsMenu}
+                className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
+              >
+                <span>📂</span>
+                <span>Collections</span>
+                <span className={`transition-transform ${collectionsOpen ? 'rotate-180' : ''}`}>⌄</span>
+              </button>
+
+              {collectionsOpen && (
+                <div className="absolute right-0 mt-2 w-full sm:w-80 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-20 overflow-hidden">
+                  <div className="p-2 border-b border-gray-700">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCreateCollectionModal(true);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm rounded bg-gray-700 hover:bg-gray-600 text-white"
+                    >
+                      + Create New Collection
+                    </button>
+                  </div>
+
+                  <div className="max-h-64 overflow-y-auto">
+                    {loadingCollections ? (
+                      <p className="px-3 py-3 text-sm text-gray-400">Loading collections...</p>
+                    ) : collections.length === 0 ? (
+                      <p className="px-3 py-3 text-sm text-gray-400">No collections yet.</p>
+                    ) : (
+                      collections.map((collection) => (
+                        <Link
+                          key={collection._id}
+                          href={`/collections/${collection._id}`}
+                          onClick={() => setCollectionsOpen(false)}
+                          className="flex items-center justify-between px-3 py-2 hover:bg-gray-700 transition-colors"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: collection.color }} />
+                            <span className="text-sm text-white truncate">{collection.name}</span>
+                          </div>
+                          <span className="text-xs text-gray-400">{collection.recipeCount}</span>
+                        </Link>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="border-t border-gray-700">
+                    <Link
+                      href="/collections"
+                      onClick={() => setCollectionsOpen(false)}
+                      className="block px-3 py-2 text-sm text-green-300 hover:bg-gray-700"
+                    >
+                      View all collections →
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Add Recipe Button - only show if authenticated */}
@@ -278,6 +409,12 @@ export default function RecipesPageClient({ initialRecipes, isAuthenticated }: R
       {filteredRecipes.length > 0 && (
         <HomePageClient recipes={filteredRecipes} />
       )}
+
+      <CreateCollectionModal
+        isOpen={showCreateCollectionModal}
+        onClose={() => setShowCreateCollectionModal(false)}
+        onSubmit={handleCreateCollection}
+      />
     </div>
   );
 }

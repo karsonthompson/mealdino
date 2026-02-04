@@ -13,11 +13,57 @@ function getDefaultDateRange() {
   };
 }
 
+function parseSelectedRecipes(searchParams) {
+  const raw = searchParams.get('selectedRecipes');
+  if (!raw) return [];
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .map((entry) => ({
+        recipeId: String(entry?.recipeId || '').trim(),
+        plannedServings: Number(entry?.plannedServings)
+      }))
+      .filter((entry) => entry.recipeId && Number.isFinite(entry.plannedServings) && entry.plannedServings > 0)
+      .map((entry) => ({
+        recipeId: entry.recipeId,
+        plannedServings: Math.max(1, Math.round(entry.plannedServings * 100) / 100)
+      }));
+  } catch {
+    return [];
+  }
+}
+
+function buildRecipeSelectionSignature(selectedRecipes) {
+  return selectedRecipes
+    .slice()
+    .sort((a, b) => a.recipeId.localeCompare(b.recipeId))
+    .map((item) => `${item.recipeId}:${item.plannedServings}`)
+    .join(',');
+}
+
 function getParams(request) {
   const { searchParams } = new URL(request.url);
   const defaults = getDefaultDateRange();
+  const source = searchParams.get('source') === 'recipes' ? 'recipes' : 'plan';
+  const selectedRecipes = parseSelectedRecipes(searchParams);
+
+  if (source === 'recipes') {
+    return {
+      source,
+      selectedRecipes,
+      startDate: 'selected-recipes',
+      endDate: buildRecipeSelectionSignature(selectedRecipes),
+      includeMeals: true,
+      includeCookingSessions: false
+    };
+  }
 
   return {
+    source,
+    selectedRecipes,
     startDate: searchParams.get('start') || defaults.start,
     endDate: searchParams.get('end') || defaults.end,
     includeMeals: searchParams.get('includeMeals') !== 'false',

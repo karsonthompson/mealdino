@@ -149,7 +149,7 @@ export default function ImportRecipesClient() {
   return (
     <div className="space-y-6">
       <div className="bg-gray-700/50 border border-gray-600 rounded-lg p-4">
-        <p className="text-sm text-gray-200 mb-3">Upload a recipe document or paste raw text. Supported now: `.txt`, `.md`, `.json` (PDF parsing will come next).</p>
+        <p className="text-sm text-gray-200 mb-3">Upload a recipe document or paste raw text. Supported: `.txt`, `.md`, `.json`, `.pdf`.</p>
 
         <div className="space-y-3">
           <input

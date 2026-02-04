@@ -80,6 +80,39 @@ function getUpcomingDays(numDays = 7) {
 interface PlanPageSearchParams {
   view?: 'weekly' | 'monthly';
   month?: string; // Format: YYYY-MM
+  days?: string; // 7 or 14
+  start?: string; // YYYY-MM-DD
+  end?: string; // YYYY-MM-DD
+}
+
+function getDaysBetween(startDate: string, endDate: string) {
+  const days = [];
+  const start = new Date(`${startDate}T00:00:00`);
+  const end = new Date(`${endDate}T00:00:00`);
+  const current = new Date(start);
+
+  while (current <= end) {
+    days.push({
+      date: formatDateForDB(current),
+      dateObj: new Date(current),
+      formatted: current.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }),
+      shortFormatted: current.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric'
+      }),
+      isToday: formatDateForDB(current) === formatDateForDB(new Date()),
+      isTomorrow: formatDateForDB(current) === formatDateForDB(new Date(Date.now() + 24 * 60 * 60 * 1000))
+    });
+    current.setDate(current.getDate() + 1);
+  }
+
+  return days;
 }
 
 export default async function PlanPage({
@@ -131,10 +164,20 @@ export default async function PlanPage({
     // Generate monthly calendar days
     monthlyDays = getMonthlyDays(currentYear, currentMonth);
   } else {
-    // Get weekly data (existing logic)
-    upcomingDays = getUpcomingDays(7);
-    startDate = upcomingDays[0].date;
-    endDate = upcomingDays[upcomingDays.length - 1].date;
+    const startParam = searchParams.start;
+    const endParam = searchParams.end;
+
+    if (startParam && endParam) {
+      upcomingDays = getDaysBetween(startParam, endParam);
+      startDate = startParam;
+      endDate = endParam;
+    } else {
+      const parsedDays = Number(searchParams.days || '7');
+      const horizonDays = parsedDays === 14 ? 14 : 7;
+      upcomingDays = getUpcomingDays(horizonDays);
+      startDate = upcomingDays[0].date;
+      endDate = upcomingDays[upcomingDays.length - 1].date;
+    }
   }
 
   // Get user ID from session

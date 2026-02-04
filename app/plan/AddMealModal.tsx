@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 interface UpcomingDay {
   date: string;
@@ -15,6 +15,7 @@ interface AddMealModalProps {
   isOpen: boolean;
   onClose: () => void;
   upcomingDays: UpcomingDay[];
+  initialSelectedDate?: string | null;
 }
 
 interface Recipe {
@@ -30,10 +31,18 @@ interface Recipe {
   };
 }
 
-export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealModalProps) {
+type RecipeScopeFilter = 'all' | 'my' | 'global';
+
+const RECENT_RECIPE_KEY = 'mealdino_recent_recipe_ids';
+
+export default function AddMealModal({ isOpen, onClose, upcomingDays, initialSelectedDate }: AddMealModalProps) {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [scopeFilter, setScopeFilter] = useState<RecipeScopeFilter>('all');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'breakfast' | 'lunch' | 'dinner' | 'snack'>('all');
+  const [recentRecipeIds, setRecentRecipeIds] = useState<string[]>([]);
 
   // Form state
   const [selectedRecipe, setSelectedRecipe] = useState('');
@@ -48,15 +57,20 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealM
 
   // Load recipes when modal opens
   useEffect(() => {
-    if (isOpen && recipes.length === 0) {
-      loadRecipes();
-    }
+    if (!isOpen) return;
 
-    // Set default date to today when modal opens
-    if (isOpen && upcomingDays.length > 0) {
-      setSelectedDate(upcomingDays[0].date);
+    try {
+      const stored = window.localStorage.getItem(RECENT_RECIPE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          setRecentRecipeIds(parsed.filter((id) => typeof id === 'string'));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to read recent recipes:', error);
     }
-  }, [isOpen, upcomingDays, recipes.length]);
+  }, [isOpen]);
 
   const loadRecipes = async () => {
     setLoading(true);
@@ -76,10 +90,60 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealM
     setLoading(false);
   };
 
+  const handleRecipeSelect = (recipeId: string) => {
+    setSelectedRecipe(recipeId);
+    const nextRecipe = recipes.find((recipe) => recipe._id === recipeId);
+    if (nextRecipe) {
+      setPlannedServings(nextRecipe.recipeServings || 1);
+    }
+
+    const nextRecentIds = [recipeId, ...recentRecipeIds.filter((id) => id !== recipeId)].slice(0, 10);
+    setRecentRecipeIds(nextRecentIds);
+
+    try {
+      window.localStorage.setItem(RECENT_RECIPE_KEY, JSON.stringify(nextRecentIds));
+    } catch (error) {
+      console.error('Failed to persist recent recipes:', error);
+    }
+  };
+
+  const filteredRecipes = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+
+    return recipes.filter((recipe) => {
+      if (scopeFilter === 'my' && recipe.isGlobal) return false;
+      if (scopeFilter === 'global' && !recipe.isGlobal) return false;
+      if (categoryFilter !== 'all' && recipe.category !== categoryFilter) return false;
+      if (!normalizedQuery) return true;
+
+      return recipe.title.toLowerCase().includes(normalizedQuery);
+    });
+  }, [recipes, scopeFilter, categoryFilter, searchQuery]);
+
+  const recentRecipes = useMemo(() => {
+    if (recentRecipeIds.length === 0) return [];
+    const byId = new Map(recipes.map((recipe) => [recipe._id, recipe]));
+    return recentRecipeIds.map((id) => byId.get(id)).filter(Boolean) as Recipe[];
+  }, [recentRecipeIds, recipes]);
+
+  // Load recipes when modal opens
+  useEffect(() => {
+    if (isOpen && recipes.length === 0) {
+      loadRecipes();
+    }
+
+    // Set default date to today when modal opens
+    if (isOpen && upcomingDays.length > 0) {
+      const hasInitialDate = initialSelectedDate && upcomingDays.some((day) => day.date === initialSelectedDate);
+      setSelectedDate(hasInitialDate ? (initialSelectedDate as string) : upcomingDays[0].date);
+    }
+  }, [isOpen, upcomingDays, recipes.length, initialSelectedDate]);
+
   const resetForm = () => {
     setSelectedRecipe(recipes.length > 0 ? recipes[0]._id : '');
     setPlanType('meal');
-    setSelectedDate(upcomingDays.length > 0 ? upcomingDays[0].date : '');
+    const hasInitialDate = initialSelectedDate && upcomingDays.some((day) => day.date === initialSelectedDate);
+    setSelectedDate(hasInitialDate ? (initialSelectedDate as string) : (upcomingDays.length > 0 ? upcomingDays[0].date : ''));
     setMealType('lunch');
     setMealSource('fresh');
     setTimeSlot('afternoon');
@@ -87,6 +151,9 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealM
     setPlannedServings(selected?.recipeServings || recipes[0]?.recipeServings || 1);
     setPurpose('daily_cooking');
     setNotes('');
+    setSearchQuery('');
+    setScopeFilter('all');
+    setCategoryFilter('all');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -172,25 +239,81 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealM
                 <div className="text-gray-400 text-sm sm:text-base">Loading recipes...</div>
               ) : (
                 <>
-                  <select
-                    value={selectedRecipe}
-                    onChange={(e) => {
-                      const nextRecipeId = e.target.value;
-                      setSelectedRecipe(nextRecipeId);
-                      const nextRecipe = recipes.find((recipe) => recipe._id === nextRecipeId);
-                      if (nextRecipe) {
-                        setPlannedServings(nextRecipe.recipeServings || 1);
-                      }
-                    }}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                    required
-                  >
-                    {recipes.map((recipe: Recipe) => (
-                      <option key={recipe._id} value={recipe._id}>
-                        {recipe.title} {recipe.isGlobal ? '[Global]' : '[Your Recipe]'} ({recipe.prepTime}min, {recipe.macros.calories} cal)
-                      </option>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search recipes..."
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {(['all', 'my', 'global'] as RecipeScopeFilter[]).map((scope) => (
+                      <button
+                        key={scope}
+                        type="button"
+                        onClick={() => setScopeFilter(scope)}
+                        className={`px-2 py-1 text-xs rounded border ${scopeFilter === scope ? 'bg-green-700 border-green-600 text-white' : 'bg-gray-700 border-gray-600 text-gray-300'}`}
+                      >
+                        {scope === 'all' ? 'All' : scope === 'my' ? 'My Recipes' : 'Global'}
+                      </button>
                     ))}
-                  </select>
+                    <select
+                      value={categoryFilter}
+                      onChange={(e) => setCategoryFilter(e.target.value as typeof categoryFilter)}
+                      className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs text-gray-200"
+                    >
+                      <option value="all">All Categories</option>
+                      <option value="breakfast">Breakfast</option>
+                      <option value="lunch">Lunch</option>
+                      <option value="dinner">Dinner</option>
+                      <option value="snack">Snack</option>
+                    </select>
+                  </div>
+
+                  {recentRecipes.length > 0 && !searchQuery && (
+                    <div className="mt-3">
+                      <p className="text-xs text-gray-400 mb-2">Recent</p>
+                      <div className="flex flex-wrap gap-2">
+                        {recentRecipes.slice(0, 4).map((recipe) => (
+                          <button
+                            key={recipe._id}
+                            type="button"
+                            onClick={() => handleRecipeSelect(recipe._id)}
+                            className={`px-2 py-1 text-xs rounded border ${selectedRecipe === recipe._id ? 'bg-green-700 border-green-600 text-white' : 'bg-gray-700 border-gray-600 text-gray-300'}`}
+                          >
+                            {recipe.title}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-3 max-h-52 overflow-y-auto space-y-2 pr-1">
+                    {filteredRecipes.length === 0 ? (
+                      <div className="text-xs text-gray-400 bg-gray-700/50 rounded border border-gray-700 p-2">
+                        No recipes match your search.
+                      </div>
+                    ) : (
+                      filteredRecipes.map((recipe: Recipe) => (
+                        <button
+                          key={recipe._id}
+                          type="button"
+                          onClick={() => handleRecipeSelect(recipe._id)}
+                          className={`w-full text-left rounded-lg border p-2 transition-colors ${
+                            selectedRecipe === recipe._id
+                              ? 'bg-green-900/40 border-green-600'
+                              : 'bg-gray-700 border-gray-600 hover:bg-gray-600'
+                          }`}
+                        >
+                          <p className="text-sm text-white font-medium">{recipe.title}</p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {recipe.isGlobal ? 'Global' : 'Your Recipe'} • {recipe.category} • {recipe.prepTime} min • {recipe.macros.calories} cal • serves {recipe.recipeServings || 1}
+                          </p>
+                        </button>
+                      ))
+                    )}
+                  </div>
+
                   {selectedRecipeData && (
                     <p className="text-gray-400 text-xs sm:text-sm mt-1">
                       <span className={`inline-block px-2 py-1 rounded text-xs mr-2 ${selectedRecipeData.isGlobal ? 'bg-blue-900 text-blue-300' : 'bg-green-900 text-green-300'}`}>
@@ -234,7 +357,7 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays }: AddMealM
             <div>
               <label className="block text-white font-medium mb-2 text-sm sm:text-base">Date</label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {upcomingDays.slice(0, 6).map((day: UpcomingDay) => (
+                {upcomingDays.map((day: UpcomingDay) => (
                   <button
                     key={day.date}
                     type="button"

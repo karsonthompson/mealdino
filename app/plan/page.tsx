@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import ButtonLogin from "@/components/ButtonLogin";
+import TopNav from "@/components/TopNav";
 import Link from "next/link";
 import { getMealPlansByDateRange, formatDateForDB, getCurrentWeekRange, getCurrentMonthRange, getMonthRange, getMonthlyDays } from "@/lib/mealPlans";
 import PlanPageClient from "./PlanPageClient";
@@ -220,12 +221,15 @@ export default async function PlanPage({
               <span className="ml-2 text-base sm:text-lg text-gray-300">🦕</span>
             </div>
             <div className="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-8 w-full sm:w-auto">
-              <nav className="flex flex-wrap justify-center sm:justify-end space-x-4 sm:space-x-8">
-                <Link href="/recipes" className="text-gray-300 hover:text-green-400 font-medium text-sm sm:text-base">Recipes</Link>
-                <Link href="/plan" className="text-green-400 font-medium text-sm sm:text-base">Plan</Link>
-                <Link href="/shopping" className="text-gray-300 hover:text-green-400 font-medium text-sm sm:text-base">Shopping</Link>
-                <Link href="/dashboard" className="text-gray-300 hover:text-green-400 font-medium text-sm sm:text-base">Dashboard</Link>
-              </nav>
+              <TopNav
+                activeHref="/plan"
+                links={[
+                  { href: "/recipes", label: "Recipes" },
+                  { href: "/plan", label: "Plan" },
+                  { href: "/shopping", label: "Shopping" },
+                  { href: "/dashboard", label: "Dashboard" }
+                ]}
+              />
               <div className="w-full sm:w-auto flex justify-center">
                 <ButtonLogin session={session} />
               </div>

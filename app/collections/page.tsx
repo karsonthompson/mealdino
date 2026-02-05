@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import ButtonLogin from "@/components/ButtonLogin";
+import TopNav from "@/components/TopNav";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import CollectionsPageClient from "./CollectionsPageClient";
@@ -25,12 +26,15 @@ export default async function CollectionsPage() {
             </div>
 
             <div className="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-8 w-full sm:w-auto">
-              <nav className="flex flex-wrap justify-center space-x-4 sm:space-x-8">
-                <Link href="/recipes" className="text-gray-300 hover:text-green-400 font-medium whitespace-nowrap text-sm sm:text-base">Recipes</Link>
-                <Link href="/plan" className="text-gray-300 hover:text-green-400 font-medium whitespace-nowrap text-sm sm:text-base">Plan</Link>
-                <Link href="/shopping" className="text-gray-300 hover:text-green-400 font-medium whitespace-nowrap text-sm sm:text-base">Shopping</Link>
-                <Link href="/dashboard" className="text-gray-300 hover:text-green-400 font-medium whitespace-nowrap text-sm sm:text-base">Dashboard</Link>
-              </nav>
+              <TopNav
+                activeHref="/collections"
+                links={[
+                  { href: "/recipes", label: "Recipes" },
+                  { href: "/plan", label: "Plan" },
+                  { href: "/shopping", label: "Shopping" },
+                  { href: "/dashboard", label: "Dashboard" }
+                ]}
+              />
               <div className="w-full sm:w-auto flex justify-center">
                 <ButtonLogin session={session} />
               </div>

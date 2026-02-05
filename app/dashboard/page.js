@@ -7,9 +7,7 @@ import Link from "next/link";
 export default async function Dashboard() {
     const session = await auth();
     const { isSubscribed } = await checkSubscription();
-    const billingHref = isSubscribed
-        ? "/api/billing/create-portal"
-        : "/api/billing/create-checkout";
+    const billingHref = "/pricing";
     const billingLabel = isSubscribed ? "Manage Billing" : "Checkout";
 
     return (
@@ -25,7 +23,8 @@ export default async function Dashboard() {
                         </div>
                         <div className="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-8 w-full sm:w-auto">
                             <TopNav
-                                activeHref="/dashboard"
+                                hasSession={!!session?.user}
+                activeHref="/dashboard"
                                 links={[
                                     { href: "/recipes", label: "Recipes" },
                                     { href: "/plan", label: "Plan" },
@@ -34,7 +33,7 @@ export default async function Dashboard() {
                                     { href: "/pricing", label: "Pricing" }
                                 ]}
                             />
-                            <div className="w-full sm:w-auto flex justify-center">
+                            <div className="hidden sm:flex sm:w-auto justify-center">
                                 <ButtonLogin session={session} />
                             </div>
                         </div>

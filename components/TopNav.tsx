@@ -1,4 +1,8 @@
+ 'use client';
+
 import Link from 'next/link';
+import { signIn } from 'next-auth/react';
+import ButtonLogout from './ButtonLogout';
 
 interface TopNavLink {
   href: string;
@@ -8,6 +12,8 @@ interface TopNavLink {
 interface TopNavProps {
   links: TopNavLink[];
   activeHref: string;
+  hasSession?: boolean;
+  signInCallbackUrl?: string;
 }
 
 function getLinkClass(isActive: boolean) {
@@ -18,7 +24,12 @@ function getLinkClass(isActive: boolean) {
   return 'block whitespace-nowrap rounded-md px-3 py-2 text-gray-300 hover:text-green-400 hover:bg-gray-700/60 font-medium text-sm sm:text-base';
 }
 
-export default function TopNav({ links, activeHref }: TopNavProps) {
+export default function TopNav({
+  links,
+  activeHref,
+  hasSession = false,
+  signInCallbackUrl = '/dashboard'
+}: TopNavProps) {
   return (
     <>
       <details className="relative sm:hidden w-full">
@@ -32,6 +43,19 @@ export default function TopNav({ links, activeHref }: TopNavProps) {
                 {link.label}
               </Link>
             ))}
+          </div>
+          <div className="mt-2 border-t border-gray-700 pt-2">
+            {hasSession ? (
+              <ButtonLogout extraStyle="w-full justify-center" />
+            ) : (
+              <button
+                type="button"
+                onClick={() => signIn(undefined, { callbackUrl: signInCallbackUrl })}
+                className="w-full rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-500"
+              >
+                Get started
+              </button>
+            )}
           </div>
         </div>
       </details>

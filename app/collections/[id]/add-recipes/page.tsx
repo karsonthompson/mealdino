@@ -27,6 +27,7 @@ export default async function AddRecipesPage({ params }: { params: { id: string 
 
             <div className="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-8 w-full sm:w-auto">
               <TopNav
+                hasSession={!!session?.user}
                 activeHref="/collections"
                 links={[
                   { href: "/recipes", label: "Recipes" },
@@ -34,7 +35,7 @@ export default async function AddRecipesPage({ params }: { params: { id: string 
                   { href: "/dashboard", label: "Dashboard" }
                 ]}
               />
-              <div className="w-full sm:w-auto flex justify-center">
+              <div className="hidden sm:flex sm:w-auto justify-center">
                 <ButtonLogin session={session} />
               </div>
             </div>

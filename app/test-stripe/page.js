@@ -1,8 +1,14 @@
-'use client';
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 
 import UpgradeButton from '@/components/UpgradeButton';
 
-export default function TestStripePage() {
+export default async function TestStripePage() {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/");
+  }
+
   return (
     <div className="container mx-auto py-8">
       <h1 className="text-2xl font-bold mb-6">Stripe Integration Test</h1>

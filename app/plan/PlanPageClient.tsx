@@ -77,6 +77,18 @@ interface PlanPageClientProps {
   mealPlansByDate: { [key: string]: MealPlan };
 }
 
+interface CollectionSummary {
+  _id: string;
+  name: string;
+  recipeCount: number;
+}
+
+interface CollectionApiItem {
+  _id: string;
+  name: string;
+  recipeCount?: number;
+}
+
 interface DaySnapshot {
   date: string;
   plan?: MealPlan;
@@ -125,20 +137,36 @@ export default function PlanPageClient({
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionUndo, setActionUndo] = useState<(() => Promise<void> | void) | null>(null);
   const [bulkSaving, setBulkSaving] = useState(false);
+  const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
+  const [collections, setCollections] = useState<CollectionSummary[]>([]);
+  const [collectionsLoading, setCollectionsLoading] = useState(false);
+  const [collectionsLoaded, setCollectionsLoaded] = useState(false);
+  const [generateLoading, setGenerateLoading] = useState(false);
 
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [customStart, setCustomStart] = useState(upcomingDays[0]?.date || '');
-  const [customEnd, setCustomEnd] = useState(upcomingDays[upcomingDays.length - 1]?.date || '');
+  const initialStart = upcomingDays[0]?.date || new Date().toISOString().slice(0, 10);
+  const initialEnd = upcomingDays[upcomingDays.length - 1]?.date || initialStart;
+
+  const [customStart, setCustomStart] = useState(initialStart);
+  const [customEnd, setCustomEnd] = useState(initialEnd);
+  const [generatorCollectionId, setGeneratorCollectionId] = useState('');
+  const [generatorStartDate, setGeneratorStartDate] = useState(initialStart);
+  const [generatorEndDate, setGeneratorEndDate] = useState(initialEnd);
+  const [generatorMealTypes, setGeneratorMealTypes] = useState<Array<'breakfast' | 'lunch' | 'dinner' | 'snack'>>(['lunch']);
 
   useEffect(() => {
     setLocalMealPlansByDate(mealPlansByDate);
   }, [mealPlansByDate]);
 
   useEffect(() => {
-    setCustomStart(upcomingDays[0]?.date || '');
-    setCustomEnd(upcomingDays[upcomingDays.length - 1]?.date || '');
+    const nextStart = upcomingDays[0]?.date || new Date().toISOString().slice(0, 10);
+    const nextEnd = upcomingDays[upcomingDays.length - 1]?.date || nextStart;
+    setCustomStart(nextStart);
+    setCustomEnd(nextEnd);
+    setGeneratorStartDate(nextStart);
+    setGeneratorEndDate(nextEnd);
 
     if (!selectedDate || !upcomingDays.some((day) => day.date === selectedDate)) {
       setSelectedDate(upcomingDays[0]?.date || null);
@@ -224,12 +252,108 @@ export default function PlanPageClient({
     router.push(`/plan?${params.toString()}`);
   };
 
+  const loadCollections = async () => {
+    if (collectionsLoading || collectionsLoaded) return;
+    setCollectionsLoading(true);
+    try {
+      const response = await fetch('/api/collections');
+      const result = await response.json();
+      if (!response.ok || !result?.success || !Array.isArray(result?.data)) {
+        throw new Error(result?.message || 'Failed to load collections');
+      }
+
+      const nextCollections = result.data
+        .map((collection: CollectionApiItem) => ({
+          _id: collection._id,
+          name: collection.name,
+          recipeCount: collection.recipeCount || 0
+        }))
+        .filter((collection: CollectionSummary) => collection.recipeCount > 0)
+        .sort((a: CollectionSummary, b: CollectionSummary) => a.name.localeCompare(b.name));
+
+      setCollections(nextCollections);
+      setCollectionsLoaded(true);
+      if (!generatorCollectionId && nextCollections.length > 0) {
+        setGeneratorCollectionId(nextCollections[0]._id);
+      }
+    } catch (error) {
+      console.error('Failed to load collections:', error);
+      alert('Failed to load collections.');
+    } finally {
+      setCollectionsLoading(false);
+    }
+  };
+
+  const openGeneratorModal = async () => {
+    setIsGeneratorOpen(true);
+    await loadCollections();
+  };
+
+  const generateFromCollection = async () => {
+    if (!generatorCollectionId) {
+      alert('Select a collection first.');
+      return;
+    }
+
+    if (!generatorStartDate || !generatorEndDate || generatorStartDate > generatorEndDate) {
+      alert('Select a valid date range.');
+      return;
+    }
+
+    if (!Array.isArray(generatorMealTypes) || generatorMealTypes.length === 0) {
+      alert('Select at least one meal type.');
+      return;
+    }
+
+    setGenerateLoading(true);
+    try {
+      const response = await fetch('/api/meal-plans/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          collectionId: generatorCollectionId,
+          mealTypes: generatorMealTypes,
+          startDate: generatorStartDate,
+          endDate: generatorEndDate
+        })
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || 'Failed to generate meal plan');
+      }
+
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('view', 'weekly');
+      params.set('start', generatorStartDate);
+      params.set('end', generatorEndDate);
+      params.delete('days');
+      setIsGeneratorOpen(false);
+      router.push(`/plan?${params.toString()}`);
+      router.refresh();
+      showMessage('Plan generated from collection');
+    } catch (error) {
+      console.error('Failed to generate from collection:', error);
+      alert(error instanceof Error ? error.message : 'Failed to generate plan.');
+    } finally {
+      setGenerateLoading(false);
+    }
+  };
+
   const handleMonthChange = (year: number, month: number) => {
     const params = new URLSearchParams(searchParams.toString());
     const monthParam = `${year}-${String(month + 1).padStart(2, '0')}`;
     params.set('month', monthParam);
     params.set('view', 'monthly');
     router.push(`/plan?${params.toString()}`);
+  };
+
+  const toggleGeneratorMealType = (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack') => {
+    setGeneratorMealTypes((prev) => (
+      prev.includes(mealType)
+        ? prev.filter((item) => item !== mealType)
+        : [...prev, mealType]
+    ));
   };
 
   const updateEntryServings = async (
@@ -585,6 +709,12 @@ export default function PlanPageClient({
                 >
                   Next 14 Days
                 </button>
+                <button
+                  onClick={openGeneratorModal}
+                  className="px-3 py-2 text-xs rounded bg-blue-700 hover:bg-blue-600 text-white"
+                >
+                  Generate from Collection
+                </button>
               </div>
             </div>
 
@@ -740,6 +870,118 @@ export default function PlanPageClient({
       >
         +
       </button>
+
+      {isGeneratorOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-gray-900 border border-gray-700 rounded-xl p-5 sm:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">Generate Plan from Collection</h3>
+              <button
+                type="button"
+                onClick={() => setIsGeneratorOpen(false)}
+                disabled={generateLoading}
+                className="text-gray-400 hover:text-white"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Collection</label>
+                <select
+                  value={generatorCollectionId}
+                  onChange={(e) => setGeneratorCollectionId(e.target.value)}
+                  disabled={collectionsLoading || generateLoading}
+                  className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-sm text-white"
+                >
+                  <option value="">Select a collection</option>
+                  {collections.map((collection) => (
+                    <option key={collection._id} value={collection._id}>
+                      {collection.name} ({collection.recipeCount} recipes)
+                    </option>
+                  ))}
+                </select>
+                {collectionsLoading && <p className="text-[11px] text-gray-500 mt-1">Loading collections...</p>}
+                {!collectionsLoading && collections.length === 0 && (
+                  <p className="text-[11px] text-gray-500 mt-1">No collections with recipes found.</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Meal types per day</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['breakfast', 'lunch', 'dinner', 'snack'] as const).map((mealType) => {
+                    const checked = generatorMealTypes.includes(mealType);
+                    return (
+                      <label
+                        key={mealType}
+                        className={`flex items-center gap-2 rounded border px-2 py-2 text-xs capitalize ${
+                          checked ? 'border-green-600 bg-green-900/20 text-green-200' : 'border-gray-600 bg-gray-800 text-gray-300'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleGeneratorMealType(mealType)}
+                          disabled={generateLoading}
+                          className="accent-green-500"
+                        />
+                        {mealType}
+                      </label>
+                    );
+                  })}
+                </div>
+                <p className="text-[11px] text-gray-500 mt-1">
+                  A meal will be generated for each selected type on each day.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Start date</label>
+                  <input
+                    type="date"
+                    value={generatorStartDate}
+                    onChange={(e) => setGeneratorStartDate(e.target.value)}
+                    disabled={generateLoading}
+                    className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-sm text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">End date</label>
+                  <input
+                    type="date"
+                    value={generatorEndDate}
+                    onChange={(e) => setGeneratorEndDate(e.target.value)}
+                    disabled={generateLoading}
+                    className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-sm text-white"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsGeneratorOpen(false)}
+                disabled={generateLoading}
+                className="px-3 py-2 text-xs rounded bg-gray-700 text-gray-200 hover:bg-gray-600 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={generateFromCollection}
+                disabled={generateLoading || collections.length === 0}
+                className="px-3 py-2 text-xs rounded bg-blue-700 hover:bg-blue-600 text-white disabled:opacity-50"
+              >
+                {generateLoading ? 'Generating...' : 'Create'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <AddMealModal
         isOpen={isModalOpen}

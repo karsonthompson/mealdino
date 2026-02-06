@@ -1,12 +1,16 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getRecipeById } from "@/lib/recipes";
 import { auth } from "@/auth";
 import RecipeActions from "./RecipeActions";
 
 export default async function RecipePage({ params }: { params: { id: string } }) {
-  const recipe = await getRecipeById(params.id);
   const session = await auth();
+  if (!session?.user) {
+    redirect("/");
+  }
+
+  const recipe = await getRecipeById(params.id);
 
   // If recipe doesn't exist, show 404
   if (!recipe) {
@@ -14,7 +18,7 @@ export default async function RecipePage({ params }: { params: { id: string } })
   }
 
   // Check if the current user owns this recipe
-  const isOwner = session?.user?.id === recipe.userId;
+  const isOwner = session.user.id === recipe.userId;
   const canEdit = isOwner && !recipe.isGlobal;
 
   return (

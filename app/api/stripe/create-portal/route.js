@@ -48,6 +48,35 @@ export async function POST(request) {
 
     let stripeCustomerId = user.stripeCustomerId;
 
+    // Validate existing customer ID for the current key/mode.
+    if (stripeCustomerId) {
+      try {
+        await stripe.customers.retrieve(stripeCustomerId);
+      } catch (error) {
+        if (error?.code === 'resource_missing' || /No such customer/i.test(error?.message || '')) {
+          stripeCustomerId = null;
+        } else {
+          throw error;
+        }
+      }
+    }
+
+    // Recover from subscription record when customer id is stale/outdated.
+    if (!stripeCustomerId && user.stripeSubscriptionId) {
+      try {
+        const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+        stripeCustomerId = typeof subscription?.customer === 'string' ? subscription.customer : null;
+        if (stripeCustomerId) {
+          user.stripeCustomerId = stripeCustomerId;
+          await user.save();
+        }
+      } catch (error) {
+        if (!(error?.code === 'resource_missing')) {
+          throw error;
+        }
+      }
+    }
+
     // Recover gracefully if DB missed the customer id but Stripe has one for this email.
     if (!stripeCustomerId && session.user.email) {
       const customers = await stripe.customers.list({
@@ -64,7 +93,7 @@ export async function POST(request) {
 
     if (!stripeCustomerId) {
       return NextResponse.json(
-        { error: 'No billing account found. Please subscribe first.' },
+        { error: 'No billing customer found for this environment. Ensure production uses the matching Stripe mode (live vs test).' },
         { status: 400 }
       );
     }

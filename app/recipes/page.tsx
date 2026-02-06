@@ -4,6 +4,7 @@ import TopNav from "@/components/TopNav";
 import Link from "next/link";
 import { getAllRecipes } from "@/lib/recipes";
 import RecipesPageClient from "./RecipesPageClient";
+import { redirect } from "next/navigation";
 
 interface Recipe {
   _id: string;
@@ -29,6 +30,10 @@ interface Recipe {
 
 export default async function RecipesPage() {
   const session = await auth();
+  if (!session?.user) {
+    redirect("/");
+  }
+
   const userId = session?.user?.id || null;
   const recipes = await getAllRecipes(userId);
 

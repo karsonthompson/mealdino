@@ -37,6 +37,19 @@ export async function POST(request) {
     // Create or reuse Stripe customer
     let stripeCustomerId = user.stripeCustomerId;
 
+    // Guard against stale customer IDs when switching Stripe mode.
+    if (stripeCustomerId) {
+      try {
+        await stripe.customers.retrieve(stripeCustomerId);
+      } catch (error) {
+        if (error?.code === 'resource_missing' || /No such customer/i.test(error?.message || '')) {
+          stripeCustomerId = null;
+        } else {
+          throw error;
+        }
+      }
+    }
+
     if (!stripeCustomerId) {
       const customer = await stripe.customers.create({
         email: session.user.email,

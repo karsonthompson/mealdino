@@ -46,7 +46,7 @@ function getDefaultDateRange() {
 export default async function ShoppingPage({
   searchParams
 }: {
-  searchParams: { source?: string; selectedRecipes?: string };
+  searchParams: { source?: string; selectedRecipes?: string; collectionId?: string; start?: string; end?: string };
 }) {
   const session = await auth();
 
@@ -63,10 +63,17 @@ export default async function ShoppingPage({
   }
 
   const defaults = getDefaultDateRange();
-  const sourceMode = searchParams.source === 'recipes' ? 'recipes' : 'plan';
+  const sourceMode = searchParams.source === 'recipes'
+    ? 'recipes'
+    : searchParams.source === 'collection'
+      ? 'collection'
+      : 'plan';
   const selectedRecipes = sourceMode === 'recipes'
     ? parseSelectedRecipesParam(searchParams.selectedRecipes)
     : [];
+  const selectedCollectionId = sourceMode === 'collection' ? String(searchParams.collectionId || '') : '';
+  const defaultStartDate = String(searchParams.start || defaults.start);
+  const defaultEndDate = String(searchParams.end || defaults.end);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-slate-800">
@@ -110,10 +117,11 @@ export default async function ShoppingPage({
         </div>
 
         <ShoppingPageClient
-          defaultStartDate={defaults.start}
-          defaultEndDate={defaults.end}
+          defaultStartDate={defaultStartDate}
+          defaultEndDate={defaultEndDate}
           sourceMode={sourceMode}
           selectedRecipes={selectedRecipes}
+          selectedCollectionId={selectedCollectionId}
         />
       </main>
     </div>

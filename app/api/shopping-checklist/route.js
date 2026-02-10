@@ -47,13 +47,16 @@ function buildRecipeSelectionSignature(selectedRecipes) {
 function getParams(request) {
   const { searchParams } = new URL(request.url);
   const defaults = getDefaultDateRange();
-  const source = searchParams.get('source') === 'recipes' ? 'recipes' : 'plan';
+  const rawSource = searchParams.get('source');
+  const source = rawSource === 'recipes' || rawSource === 'collection' ? rawSource : 'plan';
   const selectedRecipes = parseSelectedRecipes(searchParams);
+  const collectionId = String(searchParams.get('collectionId') || '');
 
   if (source === 'recipes') {
     return {
       source,
       selectedRecipes,
+      collectionId: '',
       startDate: 'selected-recipes',
       endDate: buildRecipeSelectionSignature(selectedRecipes),
       includeMeals: true,
@@ -61,9 +64,24 @@ function getParams(request) {
     };
   }
 
+  if (source === 'collection') {
+    const start = searchParams.get('start') || defaults.start;
+    const end = searchParams.get('end') || defaults.end;
+    return {
+      source,
+      selectedRecipes,
+      collectionId,
+      startDate: `collection:${collectionId}:${start}`,
+      endDate: end,
+      includeMeals: searchParams.get('includeMeals') !== 'false',
+      includeCookingSessions: searchParams.get('includeCookingSessions') !== 'false'
+    };
+  }
+
   return {
     source,
     selectedRecipes,
+    collectionId: '',
     startDate: searchParams.get('start') || defaults.start,
     endDate: searchParams.get('end') || defaults.end,
     includeMeals: searchParams.get('includeMeals') !== 'false',

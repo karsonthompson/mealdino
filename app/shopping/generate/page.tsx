@@ -73,10 +73,10 @@ export default async function GenerateShoppingPage() {
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <div className="text-center mb-8 sm:mb-10">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-3 sm:mb-4">
-            Generate From <span className="text-green-400">Recipes</span>
+            Generate <span className="text-green-400">Shopping List</span>
           </h2>
           <p className="text-lg sm:text-xl text-gray-300 max-w-3xl mx-auto px-4 sm:px-0">
-            Pick the recipes you want to shop for, set planned servings, and generate your shopping list instantly.
+            Build from selected recipes, or choose a collection and date range to include only collection meals in your plan window.
           </p>
         </div>
 

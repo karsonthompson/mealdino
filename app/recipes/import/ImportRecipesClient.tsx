@@ -42,6 +42,8 @@ interface ImportResponse {
   };
 }
 
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
+
 function toLines(text: string) {
   return text.split('\n').map((line) => line.trim()).filter(Boolean);
 }
@@ -61,6 +63,11 @@ export default function ImportRecipesClient() {
   const handleParse = async () => {
     if (!file && !pastedText.trim()) {
       setStatus('Upload a file or paste recipe text first.');
+      return;
+    }
+
+    if (file && file.size > MAX_UPLOAD_BYTES) {
+      setStatus('This hosted parser accepts files up to about 4MB. Split the PDF into smaller files or paste text directly.');
       return;
     }
 
@@ -150,6 +157,7 @@ export default function ImportRecipesClient() {
     <div className="space-y-6">
       <div className="bg-gray-700/50 border border-gray-600 rounded-lg p-4">
         <p className="text-sm text-gray-200 mb-3">Upload a recipe document or paste raw text. Supported: `.txt`, `.md`, `.json`, `.pdf`.</p>
+        <p className="text-xs text-gray-400 mb-3">For Vercel-hosted uploads, keep files under about 4MB.</p>
 
         <div className="space-y-3">
           <input

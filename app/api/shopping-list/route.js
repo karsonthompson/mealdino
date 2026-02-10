@@ -4,6 +4,9 @@ import { buildShoppingList } from '@/lib/shoppingList';
 import { getShoppingChecklist } from '@/lib/shoppingChecklist';
 import { getAisleOverrides } from '@/lib/ingredientPreferences';
 import { getAllRecipes } from '@/lib/recipes';
+import dbConnect from '@/lib/mongodb';
+import Collection from '@/models/Collection';
+import mongoose from 'mongoose';
 
 function getDefaultDateRange() {
   const start = new Date();
@@ -74,9 +77,11 @@ export async function GET(request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const source = searchParams.get('source') === 'recipes' ? 'recipes' : 'plan';
+    const rawSource = searchParams.get('source');
+    const source = rawSource === 'recipes' || rawSource === 'collection' ? rawSource : 'plan';
     const startDate = searchParams.get('start');
     const endDate = searchParams.get('end');
+    const collectionId = String(searchParams.get('collectionId') || '');
     const includeMeals = searchParams.get('includeMeals') !== 'false';
     const includeCookingSessions = searchParams.get('includeCookingSessions') !== 'false';
     const selectedRecipes = parseSelectedRecipes(searchParams);
@@ -87,9 +92,13 @@ export async function GET(request) {
 
     let start = fallbackStart;
     let end = fallbackEnd;
+    let checklistStart = fallbackStart;
+    let checklistEnd = fallbackEnd;
     let effectiveIncludeMeals = includeMeals;
     let effectiveIncludeCookingSessions = includeCookingSessions;
     let mealPlans = [];
+    let selectedCollectionName = null;
+    let selectedCollectionRecipeCount = 0;
 
     if (source === 'recipes') {
       if (selectedRecipes.length === 0) {
@@ -126,6 +135,8 @@ export async function GET(request) {
       const recipeSignature = buildRecipeSelectionSignature(selectedRecipes);
       start = 'selected-recipes';
       end = recipeSignature;
+      checklistStart = start;
+      checklistEnd = end;
       effectiveIncludeMeals = true;
       effectiveIncludeCookingSessions = false;
       mealPlans = [
@@ -135,8 +146,63 @@ export async function GET(request) {
           cookingSessions: []
         }
       ];
+    } else if (source === 'collection') {
+      if (!collectionId || !mongoose.Types.ObjectId.isValid(collectionId)) {
+        return Response.json(
+          {
+            success: false,
+            message: 'Select a valid collection to generate a shopping list.'
+          },
+          { status: 400 }
+        );
+      }
+
+      await dbConnect();
+      const userIdObjectId = new mongoose.Types.ObjectId(userId);
+      const collection = await Collection.findOne({
+        _id: collectionId,
+        userId: userIdObjectId
+      }).populate('recipes', 'title');
+
+      if (!collection) {
+        return Response.json(
+          {
+            success: false,
+            message: 'Collection not found.'
+          },
+          { status: 404 }
+        );
+      }
+
+      const collectionRecipeIds = new Set((collection.recipes || []).map((recipe) => recipe?._id?.toString()).filter(Boolean));
+      if (collectionRecipeIds.size === 0) {
+        return Response.json(
+          {
+            success: false,
+            message: 'Selected collection has no recipes.'
+          },
+          { status: 400 }
+        );
+      }
+
+      selectedCollectionName = collection.name;
+      selectedCollectionRecipeCount = collectionRecipeIds.size;
+
+      const rangedPlans = await getMealPlansByDateRange(start, end, userId);
+      mealPlans = rangedPlans
+        .map((plan) => ({
+          ...plan,
+          meals: (plan.meals || []).filter((meal) => collectionRecipeIds.has(String(meal?.recipe?._id || ''))),
+          cookingSessions: (plan.cookingSessions || []).filter((session) => collectionRecipeIds.has(String(session?.recipe?._id || '')))
+        }))
+        .filter((plan) => (plan.meals?.length || 0) > 0 || (plan.cookingSessions?.length || 0) > 0);
+
+      checklistStart = `collection:${collectionId}:${start}`;
+      checklistEnd = end;
     } else {
       mealPlans = await getMealPlansByDateRange(start, end, userId);
+      checklistStart = start;
+      checklistEnd = end;
     }
 
     const shoppingList = buildShoppingList(mealPlans, {
@@ -145,8 +211,8 @@ export async function GET(request) {
     });
     const checklist = await getShoppingChecklist({
       userId,
-      startDate: start,
-      endDate: end,
+      startDate: checklistStart,
+      endDate: checklistEnd,
       includeMeals: effectiveIncludeMeals,
       includeCookingSessions: effectiveIncludeCookingSessions
     });
@@ -170,6 +236,9 @@ export async function GET(request) {
         source,
         mealPlanCount: source === 'recipes' ? 0 : mealPlans.length,
         selectedRecipeCount: source === 'recipes' ? selectedRecipes.length : 0,
+        selectedCollectionId: source === 'collection' ? collectionId : null,
+        selectedCollectionName: source === 'collection' ? selectedCollectionName : null,
+        selectedCollectionRecipeCount: source === 'collection' ? selectedCollectionRecipeCount : 0,
         checkedKeys: checklist.checkedKeys,
         manualItems: checklist.manualItems,
         totals: totalsWithOverrides,

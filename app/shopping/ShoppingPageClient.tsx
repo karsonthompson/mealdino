@@ -36,8 +36,11 @@ interface ShoppingData {
     start: string;
     end: string;
   };
-  source?: 'plan' | 'recipes';
+  source?: 'plan' | 'recipes' | 'collection';
   selectedRecipeCount?: number;
+  selectedCollectionId?: string | null;
+  selectedCollectionName?: string | null;
+  selectedCollectionRecipeCount?: number;
   includeMeals: boolean;
   includeCookingSessions: boolean;
   mealPlanCount: number;
@@ -64,8 +67,9 @@ interface ApiResponse {
 interface ShoppingPageClientProps {
   defaultStartDate: string;
   defaultEndDate: string;
-  sourceMode: 'plan' | 'recipes';
+  sourceMode: 'plan' | 'recipes' | 'collection';
   selectedRecipes: Array<{ recipeId: string; plannedServings: number }>;
+  selectedCollectionId: string;
 }
 
 const TOTAL_KEY_PREFIX = 'total:';
@@ -98,7 +102,8 @@ export default function ShoppingPageClient({
   defaultStartDate,
   defaultEndDate,
   sourceMode,
-  selectedRecipes
+  selectedRecipes,
+  selectedCollectionId
 }: ShoppingPageClientProps) {
   const [startDate, setStartDate] = useState(defaultStartDate);
   const [endDate, setEndDate] = useState(defaultEndDate);
@@ -117,6 +122,7 @@ export default function ShoppingPageClient({
 
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
   const isRecipeMode = sourceMode === 'recipes';
+  const isCollectionMode = sourceMode === 'collection';
   const selectedRecipesPayload = useMemo(() => JSON.stringify(selectedRecipes || []), [selectedRecipes]);
   const isDateRangeValid = useMemo(() => isRecipeMode || startDate <= endDate, [isRecipeMode, startDate, endDate]);
 
@@ -147,6 +153,11 @@ export default function ShoppingPageClient({
       params.set('source', 'recipes');
       params.set('selectedRecipes', selectedRecipesPayload);
       return params;
+    }
+
+    if (isCollectionMode) {
+      params.set('source', 'collection');
+      params.set('collectionId', selectedCollectionId);
     }
 
     params.set('start', startDate);
@@ -195,6 +206,9 @@ export default function ShoppingPageClient({
     try {
       if (isRecipeMode && selectedRecipes.length === 0) {
         throw new Error('Pick at least one recipe first.');
+      }
+      if (isCollectionMode && !selectedCollectionId) {
+        throw new Error('Select a collection first.');
       }
 
       const params = buildRequestParams();
@@ -252,12 +266,18 @@ export default function ShoppingPageClient({
 
     if (isRecipeMode) {
       lines.push('MealDino Shopping List (Selected Recipes)');
+    } else if (isCollectionMode) {
+      lines.push(`MealDino Shopping List (${shoppingData.selectedCollectionName || 'Selected Collection'})`);
+      lines.push(`Date Range: ${shoppingData.dateRange.start} to ${shoppingData.dateRange.end}`);
     } else {
       lines.push(`MealDino Shopping List (${shoppingData.dateRange.start} to ${shoppingData.dateRange.end})`);
     }
     lines.push('');
     if (isRecipeMode) {
       lines.push(`Selected recipes: ${shoppingData.selectedRecipeCount || selectedRecipes.length}`);
+    } else if (isCollectionMode) {
+      lines.push(`Collection recipes: ${shoppingData.selectedCollectionRecipeCount || 0}`);
+      lines.push(`Collection-filtered plans: ${shoppingData.mealPlanCount}`);
     } else {
       lines.push(`Meal plans: ${shoppingData.mealPlanCount}`);
     }
@@ -442,6 +462,8 @@ export default function ShoppingPageClient({
     link.href = url;
     link.download = isRecipeMode
       ? 'shopping-list-selected-recipes.txt'
+      : isCollectionMode
+        ? `shopping-list-collection-${startDate}-to-${endDate}.txt`
       : `shopping-list-${startDate}-to-${endDate}.txt`;
     document.body.appendChild(link);
     link.click();
@@ -477,7 +499,9 @@ export default function ShoppingPageClient({
             <p className="text-xs text-gray-400">
               {isRecipeMode
                 ? `Using ${selectedRecipes.length} selected recipe(s).`
-                : 'Use your plan dates or switch to recipe picker mode.'}
+                : isCollectionMode
+                  ? 'Using only meals/sessions in your selected collection within this date range.'
+                  : 'Use your plan dates or switch to recipe picker mode.'}
             </p>
           </div>
           <Link
@@ -541,7 +565,7 @@ export default function ShoppingPageClient({
 
               <button
                 onClick={loadShoppingList}
-                disabled={loading || !isDateRangeValid}
+                disabled={loading || !isDateRangeValid || (isCollectionMode && !selectedCollectionId)}
                 className="h-10 bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg px-4"
               >
                 {loading ? 'Building...' : 'Build List'}
@@ -564,7 +588,7 @@ export default function ShoppingPageClient({
       <section className="bg-gray-800/70 rounded-xl border border-gray-700 p-4">
         <p className="text-sm text-white font-medium mb-2">Quick Start</p>
         <ul className="text-xs text-gray-300 space-y-1">
-          <li>1) {isRecipeMode ? 'Generate from selected recipes or switch back to date-range mode.' : 'Build your list for 7, 14, or a custom date range.'}</li>
+          <li>1) {isRecipeMode ? 'Generate from selected recipes or switch back to date-range mode.' : isCollectionMode ? 'Build your list from one collection over your selected date range.' : 'Build your list for 7, 14, or a custom date range.'}</li>
           <li>2) Check items as you shop, and add any missing manual items.</li>
           <li>3) Copy/download the list when you are ready to head out.</li>
         </ul>
@@ -580,8 +604,14 @@ export default function ShoppingPageClient({
         <>
           <section className="grid grid-cols-2 lg:grid-cols-5 gap-3">
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-3">
-              <p className="text-xs text-gray-400">{isRecipeMode ? 'Selected recipes' : 'Meal plans'}</p>
-              <p className="text-lg font-semibold text-white">{isRecipeMode ? (shoppingData.selectedRecipeCount || selectedRecipes.length) : shoppingData.mealPlanCount}</p>
+              <p className="text-xs text-gray-400">{isRecipeMode ? 'Selected recipes' : isCollectionMode ? 'Collection recipes' : 'Meal plans'}</p>
+              <p className="text-lg font-semibold text-white">
+                {isRecipeMode
+                  ? (shoppingData.selectedRecipeCount || selectedRecipes.length)
+                  : isCollectionMode
+                    ? (shoppingData.selectedCollectionRecipeCount || 0)
+                    : shoppingData.mealPlanCount}
+              </p>
             </div>
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-3">
               <p className="text-xs text-gray-400">Planned meals</p>
@@ -620,7 +650,11 @@ export default function ShoppingPageClient({
             <p className="text-xs text-gray-500 mb-3">“Copy for Notes” outputs a plain list so you can quickly convert it into native checklists in Apple Notes.</p>
 
             {shoppingData.totals.length === 0 ? (
-              <p className="text-gray-400 text-sm">No parseable ingredient quantities found in this date range.</p>
+              <p className="text-gray-400 text-sm">
+                {isCollectionMode
+                  ? 'No parseable ingredient quantities found for this collection in the selected date range.'
+                  : 'No parseable ingredient quantities found in this date range.'}
+              </p>
             ) : (
               <div className="space-y-4">
                 {groupedTotals.map((group) => (

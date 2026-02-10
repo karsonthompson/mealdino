@@ -134,6 +134,7 @@ export default function PlanPageClient({
   const [updatingServingsKey, setUpdatingServingsKey] = useState<string | null>(null);
   const [recentlySavedServingsKey, setRecentlySavedServingsKey] = useState<string | null>(null);
   const [updatingShoppingToggleKey, setUpdatingShoppingToggleKey] = useState<string | null>(null);
+  const [deletingEntryKey, setDeletingEntryKey] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionUndo, setActionUndo] = useState<(() => Promise<void> | void) | null>(null);
   const [bulkSaving, setBulkSaving] = useState(false);
@@ -443,6 +444,50 @@ export default function PlanPageClient({
     return result.data as MealPlan;
   };
 
+  const removePlannedEntry = async (
+    date: string,
+    entryType: 'meal' | 'cooking_session',
+    index: number
+  ) => {
+    const dayPlan = localMealPlansByDate[date];
+    if (!dayPlan) return;
+
+    const label = entryType === 'meal' ? 'meal' : 'cooking session';
+    const confirmed = window.confirm(`Remove this ${label} from the plan?`);
+    if (!confirmed) return;
+
+    const entryKey = `${date}:${entryType}:${index}:delete`;
+    setDeletingEntryKey(entryKey);
+
+    try {
+      const snapshot: DaySnapshot = {
+        date,
+        plan: dayPlan
+      };
+
+      const nextPlan: MealPlan = {
+        ...dayPlan,
+        meals: entryType === 'meal'
+          ? dayPlan.meals.filter((_, itemIndex) => itemIndex !== index)
+          : dayPlan.meals,
+        cookingSessions: entryType === 'cooking_session'
+          ? dayPlan.cookingSessions.filter((_, itemIndex) => itemIndex !== index)
+          : dayPlan.cookingSessions
+      };
+
+      const updated = await saveDayPlan(date, nextPlan);
+      setLocalMealPlansByDate((prev) => ({ ...prev, [date]: updated }));
+      showUndoMessage(`Removed ${label}`, async () => {
+        await restoreSnapshots([snapshot]);
+      });
+    } catch (error) {
+      console.error('Failed to remove planned entry:', error);
+      alert(`Failed to remove ${label}. Please try again.`);
+    } finally {
+      setDeletingEntryKey(null);
+    }
+  };
+
   const copyPreviousDay = async () => {
     if (!selectedDay) return;
 
@@ -543,6 +588,41 @@ export default function PlanPageClient({
     }
   };
 
+  const clearSelectedDay = async () => {
+    if (!selectedDay) return;
+
+    const currentPlan = localMealPlansByDate[selectedDay.date];
+    const mealsCount = currentPlan?.meals?.length || 0;
+    const sessionsCount = currentPlan?.cookingSessions?.length || 0;
+
+    if (mealsCount === 0 && sessionsCount === 0) {
+      showMessage('Selected day is already empty');
+      return;
+    }
+
+    const confirmed = window.confirm('Clear all meals and cooking sessions for this day?');
+    if (!confirmed) return;
+
+    try {
+      setBulkSaving(true);
+      const snapshot: DaySnapshot = {
+        date: selectedDay.date,
+        plan: currentPlan
+      };
+
+      const updated = await saveDayPlan(selectedDay.date, undefined);
+      setLocalMealPlansByDate((prev) => ({ ...prev, [selectedDay.date]: updated }));
+      showUndoMessage('Cleared selected day', async () => {
+        await restoreSnapshots([snapshot]);
+      });
+    } catch (error) {
+      console.error('Failed to clear selected day:', error);
+      alert('Failed to clear selected day.');
+    } finally {
+      setBulkSaving(false);
+    }
+  };
+
   const renderMealCard = (meal: Meal, index: number, date: string) => {
     const key = `${date}:meal:${index}`;
     return (
@@ -589,22 +669,32 @@ export default function PlanPageClient({
         </div>
 
         <div className="mt-2">
-          <button
-            type="button"
-            onClick={() => toggleExcludeFromShopping(date, 'meal', index, meal.excludeFromShopping)}
-            disabled={updatingShoppingToggleKey === `${key}:shopping`}
-            className={`text-xs px-2 py-1 rounded border ${
-              meal.excludeFromShopping
-                ? 'border-yellow-600 bg-yellow-900/40 text-yellow-200'
-                : 'border-gray-600 bg-gray-800 text-gray-300'
-            } disabled:opacity-50`}
-          >
-            {updatingShoppingToggleKey === `${key}:shopping`
-              ? 'Saving...'
-              : meal.excludeFromShopping
-                ? 'Excluded from shopping'
-                : 'Include in shopping'}
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => toggleExcludeFromShopping(date, 'meal', index, meal.excludeFromShopping)}
+              disabled={updatingShoppingToggleKey === `${key}:shopping`}
+              className={`text-xs px-2 py-1 rounded border ${
+                meal.excludeFromShopping
+                  ? 'border-yellow-600 bg-yellow-900/40 text-yellow-200'
+                  : 'border-gray-600 bg-gray-800 text-gray-300'
+              } disabled:opacity-50`}
+            >
+              {updatingShoppingToggleKey === `${key}:shopping`
+                ? 'Saving...'
+                : meal.excludeFromShopping
+                  ? 'Excluded from shopping'
+                  : 'Include in shopping'}
+            </button>
+            <button
+              type="button"
+              onClick={() => removePlannedEntry(date, 'meal', index)}
+              disabled={deletingEntryKey === `${key}:delete`}
+              className="text-xs px-2 py-1 rounded border border-red-700 bg-red-900/40 text-red-200 hover:bg-red-900/60 disabled:opacity-50"
+            >
+              {deletingEntryKey === `${key}:delete` ? 'Removing...' : 'Remove'}
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -652,22 +742,32 @@ export default function PlanPageClient({
         </div>
 
         <div className="mt-2">
-          <button
-            type="button"
-            onClick={() => toggleExcludeFromShopping(date, 'cooking_session', index, session.excludeFromShopping)}
-            disabled={updatingShoppingToggleKey === `${key}:shopping`}
-            className={`text-xs px-2 py-1 rounded border ${
-              session.excludeFromShopping
-                ? 'border-yellow-600 bg-yellow-900/40 text-yellow-200'
-                : 'border-gray-600 bg-gray-800 text-gray-300'
-            } disabled:opacity-50`}
-          >
-            {updatingShoppingToggleKey === `${key}:shopping`
-              ? 'Saving...'
-              : session.excludeFromShopping
-                ? 'Excluded from shopping'
-                : 'Include in shopping'}
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => toggleExcludeFromShopping(date, 'cooking_session', index, session.excludeFromShopping)}
+              disabled={updatingShoppingToggleKey === `${key}:shopping`}
+              className={`text-xs px-2 py-1 rounded border ${
+                session.excludeFromShopping
+                  ? 'border-yellow-600 bg-yellow-900/40 text-yellow-200'
+                  : 'border-gray-600 bg-gray-800 text-gray-300'
+              } disabled:opacity-50`}
+            >
+              {updatingShoppingToggleKey === `${key}:shopping`
+                ? 'Saving...'
+                : session.excludeFromShopping
+                  ? 'Excluded from shopping'
+                  : 'Include in shopping'}
+            </button>
+            <button
+              type="button"
+              onClick={() => removePlannedEntry(date, 'cooking_session', index)}
+              disabled={deletingEntryKey === `${key}:delete`}
+              className="text-xs px-2 py-1 rounded border border-red-700 bg-red-900/40 text-red-200 hover:bg-red-900/60 disabled:opacity-50"
+            >
+              {deletingEntryKey === `${key}:delete` ? 'Removing...' : 'Remove'}
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -800,6 +900,13 @@ export default function PlanPageClient({
                     className="px-3 py-2 text-xs rounded bg-gray-700 hover:bg-gray-600 text-gray-200 disabled:opacity-50"
                   >
                     Repeat to End
+                  </button>
+                  <button
+                    onClick={clearSelectedDay}
+                    disabled={bulkSaving}
+                    className="px-3 py-2 text-xs rounded bg-red-900/50 hover:bg-red-900/70 border border-red-700 text-red-100 disabled:opacity-50"
+                  >
+                    Clear Day
                   </button>
                 </div>
               </div>

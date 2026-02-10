@@ -188,68 +188,65 @@ export default function RecipesPageClient({ initialRecipes, isAuthenticated }: R
     setCollectionsOpen(true);
   };
 
-  // Get button classes for filter buttons
-  const getFilterButtonClass = (filter: RecipeFilter) => {
-    const baseClass = "px-4 py-2 text-sm font-medium rounded-full transition-colors";
-    const activeClass = "text-green-400 bg-green-900 hover:bg-green-800";
-    const inactiveClass = "text-gray-300 bg-gray-700 hover:bg-gray-600";
+  const recipeFilterOptions: Array<{ value: RecipeFilter; label: string }> = [
+    { value: 'all', label: `All (${recipeCounts.all})` },
+    ...(isAuthenticated ? [{ value: 'my-recipes' as RecipeFilter, label: `My Recipes (${recipeCounts.myRecipes})` }] : []),
+    { value: 'global', label: `Global (${recipeCounts.global})` }
+  ];
 
-    return `${baseClass} ${activeFilter === filter ? activeClass : inactiveClass}`;
-  };
-
-  // Get button classes for category buttons
-  const getCategoryButtonClass = (category: CategoryFilter) => {
-    const baseClass = "px-4 py-2 text-sm font-medium rounded-full transition-colors";
-    const activeClass = "text-green-400 bg-green-900 hover:bg-green-800";
-    const inactiveClass = "text-gray-300 bg-gray-700 hover:bg-gray-600";
-
-    return `${baseClass} ${categoryFilter === category ? activeClass : inactiveClass}`;
-  };
+  const categoryFilterOptions: Array<{ value: CategoryFilter; label: string }> = [
+    { value: 'all', label: 'All Categories' },
+    { value: 'breakfast', label: 'Breakfast' },
+    { value: 'lunch', label: 'Lunch' },
+    { value: 'dinner', label: 'Dinner' },
+    { value: 'snack', label: 'Snack' }
+  ];
 
   return (
     <div className="mb-12">
-      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-8 space-y-4 lg:space-y-0">
+      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 gap-4">
         <h3 className="text-xl sm:text-2xl font-semibold text-white text-center lg:text-left">
           Recipes
           {loading && <span className="text-sm text-gray-400 ml-2">(Loading...)</span>}
         </h3>
 
-        <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4 lg:space-x-6">
-          {/* Recipe Type Filters */}
-          <div className="flex flex-wrap justify-center gap-2 sm:gap-4">
-            <button
-              onClick={() => handleFilterChange('all')}
-              className={getFilterButtonClass('all')}
-              disabled={loading}
-            >
-              All ({recipeCounts.all})
-            </button>
-
-            {/* Only show My Recipes if authenticated */}
-            {isAuthenticated && (
-              <button
-                onClick={() => handleFilterChange('my-recipes')}
-                className={getFilterButtonClass('my-recipes')}
+        <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 lg:gap-6 w-full lg:w-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full sm:w-auto">
+            <label className="text-xs text-gray-400">
+              Source
+              <select
+                value={activeFilter}
+                onChange={(e) => handleFilterChange(e.target.value as RecipeFilter)}
                 disabled={loading}
+                className="mt-1 w-full min-w-[180px] bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white"
               >
-                <span className="hidden sm:inline">My Recipes</span>
-                <span className="sm:hidden">Mine</span> ({recipeCounts.myRecipes})
-              </button>
-            )}
+                {recipeFilterOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-            <button
-              onClick={() => handleFilterChange('global')}
-              className={getFilterButtonClass('global')}
-              disabled={loading}
-            >
-              Global ({recipeCounts.global})
-            </button>
-
+            <label className="text-xs text-gray-400">
+              Category
+              <select
+                value={categoryFilter}
+                onChange={(e) => handleCategoryFilter(e.target.value as CategoryFilter)}
+                className="mt-1 w-full min-w-[180px] bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white"
+              >
+                {categoryFilterOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
 
           {/* Collections Link - only show if authenticated */}
           {isAuthenticated && (
-            <div className="relative w-full sm:w-auto" ref={collectionsMenuRef}>
+            <div className="relative w-full sm:w-auto sm:self-end" ref={collectionsMenuRef}>
               <button
                 type="button"
                 onClick={toggleCollectionsMenu}
@@ -313,7 +310,7 @@ export default function RecipesPageClient({ initialRecipes, isAuthenticated }: R
 
           {/* Add Recipe Button - only show if authenticated */}
           {isAuthenticated && (
-            <div className="flex gap-2 w-full sm:w-auto">
+            <div className="flex gap-2 w-full sm:w-auto sm:self-end">
               <Link
                 href="/recipes/import"
                 className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
@@ -333,41 +330,6 @@ export default function RecipesPageClient({ initialRecipes, isAuthenticated }: R
             </div>
           )}
         </div>
-      </div>
-
-      {/* Category Filters */}
-      <div className="flex flex-wrap justify-center sm:justify-start gap-2 sm:gap-4 mb-8">
-        <button
-          onClick={() => handleCategoryFilter('all')}
-          className={getCategoryButtonClass('all')}
-        >
-          <span className="hidden sm:inline">All Categories</span>
-          <span className="sm:hidden">All</span>
-        </button>
-        <button
-          onClick={() => handleCategoryFilter('breakfast')}
-          className={getCategoryButtonClass('breakfast')}
-        >
-          Breakfast
-        </button>
-        <button
-          onClick={() => handleCategoryFilter('lunch')}
-          className={getCategoryButtonClass('lunch')}
-        >
-          Lunch
-        </button>
-        <button
-          onClick={() => handleCategoryFilter('dinner')}
-          className={getCategoryButtonClass('dinner')}
-        >
-          Dinner
-        </button>
-        <button
-          onClick={() => handleCategoryFilter('snack')}
-          className={getCategoryButtonClass('snack')}
-        >
-          Snack
-        </button>
       </div>
 
       {/* Empty State Messages */}

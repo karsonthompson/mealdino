@@ -7,6 +7,10 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "MealDino - Healthy Recipes Made Simple",
   description: "Discover clean, healthy recipes that take the guesswork out of eating well",
+  icons: {
+    icon: "/icon",
+    apple: "/apple-icon",
+  },
   viewport: {
     width: "device-width",
     initialScale: 1,
@@ -33,4 +37,3 @@ export default function RootLayout({
     </html>
   );
 }
-

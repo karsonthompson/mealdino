@@ -229,42 +229,6 @@ export default function MonthlyCalendar({
         </div>
       </div>
 
-      {/* Selected Day Details */}
-      {selectedDay && mealPlansByDate[selectedDay] && (
-        <div className="mt-6 p-4 bg-gray-700 rounded-lg border border-gray-600">
-          <h4 className="font-semibold text-white mb-3">
-            {monthlyDays.find(d => d.date === selectedDay)?.formatted}
-          </h4>
-
-          <div className="space-y-3">
-            {mealPlansByDate[selectedDay].meals.length > 0 && (
-              <div>
-                <h5 className="text-sm font-medium text-gray-300 mb-2">Meals:</h5>
-                <div className="space-y-1">
-                  {mealPlansByDate[selectedDay].meals.map((meal, index) => (
-                    <div key={index} className="text-sm text-gray-400">
-                      <span className="capitalize font-medium">{meal.type}:</span> {meal.recipe.title}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {mealPlansByDate[selectedDay].cookingSessions.length > 0 && (
-              <div>
-                <h5 className="text-sm font-medium text-gray-300 mb-2">Cooking Sessions:</h5>
-                <div className="space-y-1">
-                  {mealPlansByDate[selectedDay].cookingSessions.map((session, index) => (
-                    <div key={index} className="text-sm text-gray-400">
-                      <span className="capitalize font-medium">{session.timeSlot}:</span> {session.recipe.title}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

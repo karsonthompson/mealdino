@@ -1,5 +1,5 @@
 import { auth } from '@/auth';
-import { parseRecipeImportInput } from '@/lib/recipeImport';
+import { parseRecipeImportInputSmart } from '@/lib/recipeImport';
 
 const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 const MAX_EXTRACTED_TEXT_CHARS = 500_000;
@@ -127,7 +127,7 @@ export async function POST(request) {
       }
     }
 
-    const { drafts, warnings } = parseRecipeImportInput({ text, fileName, mimeType });
+    const { drafts, warnings } = await parseRecipeImportInputSmart({ text, fileName, mimeType });
 
     return Response.json({
       success: true,

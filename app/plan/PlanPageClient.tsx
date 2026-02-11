@@ -169,17 +169,39 @@ export default function PlanPageClient({
     setGeneratorStartDate(nextStart);
     setGeneratorEndDate(nextEnd);
 
-    if (!selectedDate || !upcomingDays.some((day) => day.date === selectedDate)) {
+    if (viewMode === 'weekly' && (!selectedDate || !upcomingDays.some((day) => day.date === selectedDate))) {
       setSelectedDate(upcomingDays[0]?.date || null);
     }
-  }, [upcomingDays, selectedDate]);
+  }, [upcomingDays, selectedDate, viewMode]);
+
+  useEffect(() => {
+    if (viewMode !== 'monthly') return;
+    if (selectedDate && monthlyDays.some((day) => day.date === selectedDate)) return;
+
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const todayInMonth = monthlyDays.find((day) => day.date === todayIso);
+    if (todayInMonth) {
+      setSelectedDate(todayInMonth.date);
+      return;
+    }
+
+    const firstCurrentMonthDay = monthlyDays.find((day) => day.isCurrentMonth);
+    if (firstCurrentMonthDay) {
+      setSelectedDate(firstCurrentMonthDay.date);
+    }
+  }, [viewMode, monthlyDays, selectedDate]);
 
   const selectedDay = useMemo(
     () => upcomingDays.find((day) => day.date === selectedDate) || upcomingDays[0],
     [upcomingDays, selectedDate]
   );
+  const selectedMonthlyDay = useMemo(
+    () => monthlyDays.find((day) => day.date === selectedDate) || null,
+    [monthlyDays, selectedDate]
+  );
 
   const selectedDayPlan = selectedDay ? localMealPlansByDate[selectedDay.date] : undefined;
+  const selectedMonthlyPlan = selectedMonthlyDay ? localMealPlansByDate[selectedMonthlyDay.date] : undefined;
 
   const showMessage = (message: string) => {
     setActionMessage(message);
@@ -453,7 +475,7 @@ export default function PlanPageClient({
     if (!dayPlan) return;
 
     const label = entryType === 'meal' ? 'meal' : 'cooking session';
-    const confirmed = window.confirm(`Remove this ${label} from the plan?`);
+    const confirmed = window.confirm(`Delete this ${label} from the plan?`);
     if (!confirmed) return;
 
     const entryKey = `${date}:${entryType}:${index}:delete`;
@@ -477,7 +499,7 @@ export default function PlanPageClient({
 
       const updated = await saveDayPlan(date, nextPlan);
       setLocalMealPlansByDate((prev) => ({ ...prev, [date]: updated }));
-      showUndoMessage(`Removed ${label}`, async () => {
+      showUndoMessage(`Deleted ${label}`, async () => {
         await restoreSnapshots([snapshot]);
       });
     } catch (error) {
@@ -589,9 +611,9 @@ export default function PlanPageClient({
   };
 
   const clearSelectedDay = async () => {
-    if (!selectedDay) return;
+    if (!selectedDate) return;
 
-    const currentPlan = localMealPlansByDate[selectedDay.date];
+    const currentPlan = localMealPlansByDate[selectedDate];
     const mealsCount = currentPlan?.meals?.length || 0;
     const sessionsCount = currentPlan?.cookingSessions?.length || 0;
 
@@ -606,12 +628,12 @@ export default function PlanPageClient({
     try {
       setBulkSaving(true);
       const snapshot: DaySnapshot = {
-        date: selectedDay.date,
+        date: selectedDate,
         plan: currentPlan
       };
 
-      const updated = await saveDayPlan(selectedDay.date, undefined);
-      setLocalMealPlansByDate((prev) => ({ ...prev, [selectedDay.date]: updated }));
+      const updated = await saveDayPlan(selectedDate, undefined);
+      setLocalMealPlansByDate((prev) => ({ ...prev, [selectedDate]: updated }));
       showUndoMessage('Cleared selected day', async () => {
         await restoreSnapshots([snapshot]);
       });
@@ -640,7 +662,16 @@ export default function PlanPageClient({
             {meal.source.replace('_', ' ')}
           </span>
         </div>
-        <p className="text-sm font-semibold text-white">{meal.recipe.title}</p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm font-semibold text-white">{meal.recipe.title}</p>
+          <button
+            type="button"
+            onClick={() => router.push(`/recipe/${meal.recipe._id}`)}
+            className="text-[11px] px-2 py-1 rounded bg-green-700 hover:bg-green-600 text-white"
+          >
+            View Recipe
+          </button>
+        </div>
         <p className="text-xs text-gray-400">{meal.recipe.prepTime} min • {meal.recipe.macros.calories} cal</p>
 
         <div className="mt-2 inline-flex items-center gap-2 bg-gray-800 rounded-lg border border-gray-600 px-2 py-1">
@@ -692,7 +723,7 @@ export default function PlanPageClient({
               disabled={deletingEntryKey === `${key}:delete`}
               className="text-xs px-2 py-1 rounded border border-red-700 bg-red-900/40 text-red-200 hover:bg-red-900/60 disabled:opacity-50"
             >
-              {deletingEntryKey === `${key}:delete` ? 'Removing...' : 'Remove'}
+              {deletingEntryKey === `${key}:delete` ? 'Deleting...' : 'Delete'}
             </button>
           </div>
         </div>
@@ -713,7 +744,16 @@ export default function PlanPageClient({
             {session.purpose.replace('_', ' ')}
           </span>
         </div>
-        <p className="text-sm font-semibold text-white">Cook: {session.recipe.title}</p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm font-semibold text-white">Cook: {session.recipe.title}</p>
+          <button
+            type="button"
+            onClick={() => router.push(`/recipe/${session.recipe._id}`)}
+            className="text-[11px] px-2 py-1 rounded bg-green-700 hover:bg-green-600 text-white"
+          >
+            View Recipe
+          </button>
+        </div>
         <p className="text-xs text-gray-400">{session.recipe.prepTime} min prep</p>
 
         <div className="mt-2 inline-flex items-center gap-2 bg-gray-800 rounded-lg border border-gray-600 px-2 py-1">
@@ -765,7 +805,7 @@ export default function PlanPageClient({
               disabled={deletingEntryKey === `${key}:delete`}
               className="text-xs px-2 py-1 rounded border border-red-700 bg-red-900/40 text-red-200 hover:bg-red-900/60 disabled:opacity-50"
             >
-              {deletingEntryKey === `${key}:delete` ? 'Removing...' : 'Remove'}
+              {deletingEntryKey === `${key}:delete` ? 'Deleting...' : 'Delete'}
             </button>
           </div>
         </div>
@@ -957,17 +997,90 @@ export default function PlanPageClient({
           )}
         </div>
       ) : (
-        <MonthlyCalendar
-          monthlyDays={monthlyDays}
-          mealPlansByDate={localMealPlansByDate}
-          currentYear={currentYear}
-          currentMonth={currentMonth}
-          onMonthChange={handleMonthChange}
-          onDayClick={(date) => {
-            setSelectedDate(date);
-            setIsModalOpen(true);
-          }}
-        />
+        <div className="space-y-6">
+          <MonthlyCalendar
+            monthlyDays={monthlyDays}
+            mealPlansByDate={localMealPlansByDate}
+            currentYear={currentYear}
+            currentMonth={currentMonth}
+            onMonthChange={handleMonthChange}
+            onDayClick={(date) => {
+              setSelectedDate(date);
+            }}
+          />
+
+          {selectedMonthlyDay && (
+            <section className="bg-gray-800 rounded-xl border border-gray-700 p-4 sm:p-6">
+              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-5">
+                <div>
+                  <h3 className="text-xl sm:text-2xl font-bold text-white">
+                    {selectedMonthlyDay.dateObj.toLocaleDateString('en-US', { weekday: 'long' })}
+                  </h3>
+                  <p className="text-sm text-gray-400">{selectedMonthlyDay.formatted}</p>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="px-3 py-2 text-xs rounded bg-green-600 hover:bg-green-500 text-white"
+                  >
+                    Add Meal/Session
+                  </button>
+                  <button
+                    onClick={clearSelectedDay}
+                    disabled={bulkSaving}
+                    className="px-3 py-2 text-xs rounded bg-red-900/50 hover:bg-red-900/70 border border-red-700 text-red-100 disabled:opacity-50"
+                  >
+                    Clear Day
+                  </button>
+                </div>
+              </div>
+
+              {actionMessage && (
+                <div className="mb-3 flex items-center gap-2">
+                  <p className="text-xs text-green-300">{actionMessage}</p>
+                  {actionUndo && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const callback = actionUndo;
+                        setActionUndo(null);
+                        if (callback) await callback();
+                      }}
+                      className="px-2 py-1 text-[10px] rounded bg-green-800 hover:bg-green-700 text-white"
+                    >
+                      Undo
+                    </button>
+                  )}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="text-base font-semibold text-white mb-3">Meals</h4>
+                  {selectedMonthlyPlan?.meals?.length ? (
+                    <div className="space-y-2">
+                      {selectedMonthlyPlan.meals.map((meal, index) => renderMealCard(meal, index, selectedMonthlyDay.date))}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-400 bg-gray-700/50 rounded-lg border border-gray-700 p-3">No meals planned for this day.</div>
+                  )}
+                </div>
+
+                <div>
+                  <h4 className="text-base font-semibold text-white mb-3">Cooking Sessions</h4>
+                  {selectedMonthlyPlan?.cookingSessions?.length ? (
+                    <div className="space-y-2">
+                      {selectedMonthlyPlan.cookingSessions.map((session, index) => renderSessionCard(session, index, selectedMonthlyDay.date))}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-400 bg-gray-700/50 rounded-lg border border-gray-700 p-3">No cooking sessions planned for this day.</div>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+        </div>
       )}
 
       <button

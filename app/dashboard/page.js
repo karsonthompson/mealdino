@@ -29,6 +29,7 @@ export default async function Dashboard() {
                                     { href: "/recipes", label: "Recipes" },
                                     { href: "/plan", label: "Plan" },
                                     { href: "/shopping", label: "Shopping" },
+                                    { href: "/agent", label: "Agent" },
                                     { href: "/dashboard", label: "Dashboard" },
                                     { href: "/pricing", label: "Pricing" }
                                 ]}

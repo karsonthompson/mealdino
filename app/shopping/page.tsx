@@ -95,6 +95,7 @@ export default async function ShoppingPage({
                   { href: '/recipes', label: 'Recipes' },
                   { href: '/plan', label: 'Plan' },
                   { href: '/shopping', label: 'Shopping' },
+                  { href: '/agent', label: 'Agent' },
                   { href: '/dashboard', label: 'Dashboard' }
                 ]}
               />

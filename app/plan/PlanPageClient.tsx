@@ -202,6 +202,21 @@ export default function PlanPageClient({
 
   const selectedDayPlan = selectedDay ? localMealPlansByDate[selectedDay.date] : undefined;
   const selectedMonthlyPlan = selectedMonthlyDay ? localMealPlansByDate[selectedMonthlyDay.date] : undefined;
+  const modalSelectableDays = useMemo<UpcomingDay[]>(() => {
+    if (viewMode === 'monthly') {
+      return monthlyDays
+        .filter((day) => day.isCurrentMonth)
+        .map((day) => ({
+          date: day.date,
+          dateObj: day.dateObj,
+          formatted: day.formatted,
+          shortFormatted: day.dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          isToday: day.isToday,
+          isTomorrow: false
+        }));
+    }
+    return upcomingDays;
+  }, [viewMode, monthlyDays, upcomingDays]);
 
   const showMessage = (message: string) => {
     setActionMessage(message);
@@ -1206,7 +1221,7 @@ export default function PlanPageClient({
       <AddMealModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        upcomingDays={upcomingDays}
+        upcomingDays={modalSelectableDays}
         initialSelectedDate={selectedDate}
       />
     </>

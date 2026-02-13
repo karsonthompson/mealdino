@@ -7,8 +7,11 @@ import AgentProfile from '@/models/AgentProfile';
 import { checkAgentAccess } from '@/lib/agentAccess';
 import { orchestrateAgentRun } from '@/lib/agentOrchestrator';
 import { saveMealPlan } from '@/lib/mealPlans';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 export const runtime = 'nodejs';
+const MESSAGE_POST_LIMIT = 12;
+const MESSAGE_POST_WINDOW_MS = 60_000;
 
 function detectAction(text) {
   const value = String(text || '').toLowerCase();
@@ -243,6 +246,18 @@ export async function POST(request, { params }) {
     const access = await checkAgentAccess(session.user.id);
     if (!access.allowed) {
       return Response.json({ success: false, message: access.reason }, { status: 403 });
+    }
+
+    const limitKey = `agent:messages:${session.user.id}`;
+    const rate = checkRateLimit(limitKey, MESSAGE_POST_LIMIT, MESSAGE_POST_WINDOW_MS);
+    if (!rate.allowed) {
+      return Response.json(
+        {
+          success: false,
+          message: 'Too many agent messages. Please wait a moment and try again.'
+        },
+        { status: 429 }
+      );
     }
 
     if (!mongoose.Types.ObjectId.isValid(params.id)) {

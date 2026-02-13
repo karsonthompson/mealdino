@@ -89,13 +89,10 @@ export async function GET() {
 
 // POST /api/collections - Create new collection
 export async function POST(request) {
-  console.log('POST /api/collections - Start');
   try {
     const session = await auth();
-    console.log('Session check:', session ? 'authenticated' : 'not authenticated');
 
     if (!session || !session.user) {
-      console.log('Authentication failed');
       return Response.json(
         {
           success: false,
@@ -106,7 +103,6 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    console.log('Request body:', body);
     const { name, description, color } = body;
 
     // Validation
@@ -130,12 +126,9 @@ export async function POST(request) {
       );
     }
 
-    console.log('Connecting to database...');
     await dbConnect();
 
     const userId = session.user.id;
-    console.log('User ID:', userId);
-    console.log('User ID type:', typeof userId);
 
     // Validate and convert userId to ObjectId
     if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
@@ -150,17 +143,14 @@ export async function POST(request) {
     }
 
     const userIdObjectId = new mongoose.Types.ObjectId(userId);
-    console.log('User ID converted to ObjectId:', userIdObjectId);
 
     // Check if collection name already exists for this user
-    console.log('Checking for existing collection with name:', name.trim());
     const existingCollection = await Collection.findOne({
       userId: userIdObjectId,
       name: name.trim()
     });
 
     if (existingCollection) {
-      console.log('Collection name already exists');
       return Response.json(
         {
           success: false,
@@ -171,13 +161,10 @@ export async function POST(request) {
     }
 
     // Get the highest sort order for new collection
-    console.log('Getting sort order...');
     const lastCollection = await Collection.findOne({ userId: userIdObjectId }).sort({ sortOrder: -1 });
     const sortOrder = lastCollection ? lastCollection.sortOrder + 1 : 1;
-    console.log('New collection sort order:', sortOrder);
 
     // Create new collection
-    console.log('Creating new collection...');
     const newCollection = new Collection({
       userId: userIdObjectId,
       name: name.trim(),
@@ -187,9 +174,7 @@ export async function POST(request) {
       recipes: []
     });
 
-    console.log('Saving collection to database...');
     await newCollection.save();
-    console.log('Collection saved with ID:', newCollection._id);
 
     // Populate and return the created collection
     await newCollection.populate('recipes', 'title imageUrl category');
@@ -206,7 +191,6 @@ export async function POST(request) {
       updatedAt: newCollection.updatedAt
     };
 
-    console.log('Returning success response:', formattedCollection);
     return Response.json({
       success: true,
       data: formattedCollection,
@@ -214,14 +198,6 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error('Error creating collection:', error);
-    console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-      code: error.code,
-      keyPattern: error.keyPattern,
-      keyValue: error.keyValue
-    });
 
     // Handle duplicate key error (unique constraint violation)
     if (error.code === 11000) {

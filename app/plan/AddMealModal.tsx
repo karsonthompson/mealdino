@@ -54,6 +54,7 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays, initialSel
   const [plannedServings, setPlannedServings] = useState(1);
   const [purpose, setPurpose] = useState('daily_cooking');
   const [notes, setNotes] = useState('');
+  const hasInitialDateValue = /^\d{4}-\d{2}-\d{2}$/.test(String(initialSelectedDate || ''));
 
   // Load recipes when modal opens
   useEffect(() => {
@@ -133,17 +134,29 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays, initialSel
     }
 
     // Set default date to today when modal opens
-    if (isOpen && upcomingDays.length > 0) {
-      const hasInitialDate = initialSelectedDate && upcomingDays.some((day) => day.date === initialSelectedDate);
-      setSelectedDate(hasInitialDate ? (initialSelectedDate as string) : upcomingDays[0].date);
+    if (isOpen) {
+      const hasInitialDateInOptions = initialSelectedDate && upcomingDays.some((day) => day.date === initialSelectedDate);
+      if (hasInitialDateInOptions || hasInitialDateValue) {
+        setSelectedDate(initialSelectedDate as string);
+      } else if (upcomingDays.length > 0) {
+        setSelectedDate(upcomingDays[0].date);
+      } else {
+        setSelectedDate(new Date().toISOString().slice(0, 10));
+      }
     }
-  }, [isOpen, upcomingDays, recipes.length, initialSelectedDate]);
+  }, [isOpen, upcomingDays, recipes.length, initialSelectedDate, hasInitialDateValue]);
 
   const resetForm = () => {
     setSelectedRecipe(recipes.length > 0 ? recipes[0]._id : '');
     setPlanType('meal');
-    const hasInitialDate = initialSelectedDate && upcomingDays.some((day) => day.date === initialSelectedDate);
-    setSelectedDate(hasInitialDate ? (initialSelectedDate as string) : (upcomingDays.length > 0 ? upcomingDays[0].date : ''));
+    const hasInitialDateInOptions = initialSelectedDate && upcomingDays.some((day) => day.date === initialSelectedDate);
+    if (hasInitialDateInOptions || hasInitialDateValue) {
+      setSelectedDate(initialSelectedDate as string);
+    } else if (upcomingDays.length > 0) {
+      setSelectedDate(upcomingDays[0].date);
+    } else {
+      setSelectedDate(new Date().toISOString().slice(0, 10));
+    }
     setMealType('lunch');
     setMealSource('fresh');
     setTimeSlot('afternoon');
@@ -158,6 +171,10 @@ export default function AddMealModal({ isOpen, onClose, upcomingDays, initialSel
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedDate || !planType || !selectedRecipe) {
+      alert('Please select a date and recipe before adding to plan.');
+      return;
+    }
     setSubmitting(true);
 
     try {

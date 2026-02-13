@@ -204,6 +204,9 @@ export default function CollectionDetailClient({ collectionId }: CollectionDetai
           {/* Enhanced Recipe Grid with Remove Options */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {collection.recipes.map((recipe) => (
+              (() => {
+                const macros = recipe?.macros || { calories: 0, protein: 0, carbs: 0, fat: 0 };
+                return (
               <div
                 key={recipe._id}
                 className="bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-700 relative"
@@ -247,10 +250,10 @@ export default function CollectionDetailClient({ collectionId }: CollectionDetai
                     {recipe.description}
                   </p>
                   <div className="grid grid-cols-2 sm:flex sm:justify-between items-center text-xs text-gray-400 mb-3 sm:mb-4 gap-2 sm:gap-0">
-                    <span>{recipe.macros.calories} cal</span>
-                    <span>{recipe.macros.protein}g protein</span>
-                    <span>{recipe.macros.carbs}g carbs</span>
-                    <span>{recipe.macros.fat}g fat</span>
+                    <span>{macros.calories} cal</span>
+                    <span>{macros.protein}g protein</span>
+                    <span>{macros.carbs}g carbs</span>
+                    <span>{macros.fat}g fat</span>
                   </div>
                   <Link
                     href={`/recipe/${recipe._id}`}
@@ -260,6 +263,8 @@ export default function CollectionDetailClient({ collectionId }: CollectionDetai
                   </Link>
                 </div>
               </div>
+                );
+              })()
             ))}
           </div>
         </div>

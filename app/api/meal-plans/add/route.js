@@ -1,5 +1,8 @@
 import { addMealToPlan, addCookingSessionToPlan } from '@/lib/mealPlans';
 import { auth } from '@/auth';
+import mongoose from 'mongoose';
+import Recipe from '@/models/Recipe';
+import dbConnect from '@/lib/mongodb';
 
 export async function POST(request) {
   try {
@@ -45,6 +48,32 @@ export async function POST(request) {
           message: 'Missing required fields: date, type, recipe_id'
         },
         { status: 400 }
+      );
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(recipe_id)) {
+      return Response.json(
+        {
+          success: false,
+          message: 'Invalid recipe ID'
+        },
+        { status: 400 }
+      );
+    }
+
+    await dbConnect();
+    const recipe = await Recipe.findOne({
+      _id: recipe_id,
+      $or: [{ isGlobal: true }, { userId }]
+    }).lean();
+
+    if (!recipe) {
+      return Response.json(
+        {
+          success: false,
+          message: 'Recipe not found or not accessible'
+        },
+        { status: 404 }
       );
     }
 

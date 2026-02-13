@@ -89,7 +89,8 @@ export async function POST(request, { params }) {
     }
 
     // Check if recipe is already in the collection
-    if (collection.recipes.includes(recipeId)) {
+    const alreadyInCollection = collection.recipes.some((id) => id?.equals?.(recipeId));
+    if (alreadyInCollection) {
       return Response.json(
         {
           success: false,
@@ -103,7 +104,7 @@ export async function POST(request, { params }) {
     await collection.addRecipe(recipeId);
 
     // Populate and return updated collection
-    await collection.populate('recipes', 'title imageUrl category');
+    await collection.populate('recipes', 'title description imageUrl category prepTime macros ingredients instructions userId isGlobal createdAt updatedAt');
 
     const formattedCollection = {
       _id: collection._id.toString(),
@@ -115,8 +116,22 @@ export async function POST(request, { params }) {
       recipes: collection.recipes.map(recipe => ({
         _id: recipe._id.toString(),
         title: recipe.title,
+        description: recipe.description || '',
         imageUrl: recipe.imageUrl,
-        category: recipe.category
+        category: recipe.category,
+        prepTime: Number(recipe.prepTime) || 0,
+        ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
+        instructions: Array.isArray(recipe.instructions) ? recipe.instructions : [],
+        macros: {
+          calories: Number(recipe?.macros?.calories) || 0,
+          protein: Number(recipe?.macros?.protein) || 0,
+          carbs: Number(recipe?.macros?.carbs) || 0,
+          fat: Number(recipe?.macros?.fat) || 0
+        },
+        userId: recipe.userId ? recipe.userId.toString() : null,
+        isGlobal: recipe.isGlobal === true,
+        createdAt: recipe.createdAt,
+        updatedAt: recipe.updatedAt
       })),
       createdAt: collection.createdAt,
       updatedAt: collection.updatedAt
@@ -197,7 +212,8 @@ export async function DELETE(request, { params }) {
     }
 
     // Check if recipe is in the collection
-    if (!collection.recipes.includes(recipeId)) {
+    const existsInCollection = collection.recipes.some((id) => id?.equals?.(recipeId));
+    if (!existsInCollection) {
       return Response.json(
         {
           success: false,
@@ -211,7 +227,7 @@ export async function DELETE(request, { params }) {
     await collection.removeRecipe(recipeId);
 
     // Populate and return updated collection
-    await collection.populate('recipes', 'title imageUrl category');
+    await collection.populate('recipes', 'title description imageUrl category prepTime macros ingredients instructions userId isGlobal createdAt updatedAt');
 
     const formattedCollection = {
       _id: collection._id.toString(),
@@ -223,8 +239,22 @@ export async function DELETE(request, { params }) {
       recipes: collection.recipes.map(recipe => ({
         _id: recipe._id.toString(),
         title: recipe.title,
+        description: recipe.description || '',
         imageUrl: recipe.imageUrl,
-        category: recipe.category
+        category: recipe.category,
+        prepTime: Number(recipe.prepTime) || 0,
+        ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
+        instructions: Array.isArray(recipe.instructions) ? recipe.instructions : [],
+        macros: {
+          calories: Number(recipe?.macros?.calories) || 0,
+          protein: Number(recipe?.macros?.protein) || 0,
+          carbs: Number(recipe?.macros?.carbs) || 0,
+          fat: Number(recipe?.macros?.fat) || 0
+        },
+        userId: recipe.userId ? recipe.userId.toString() : null,
+        isGlobal: recipe.isGlobal === true,
+        createdAt: recipe.createdAt,
+        updatedAt: recipe.updatedAt
       })),
       createdAt: collection.createdAt,
       updatedAt: collection.updatedAt

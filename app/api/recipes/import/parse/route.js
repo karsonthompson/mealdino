@@ -1,9 +1,12 @@
 import { auth } from '@/auth';
 import { parseRecipeImportInputSmart } from '@/lib/recipeImport';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 const MAX_EXTRACTED_TEXT_CHARS = 500_000;
 const PDF_PAGE_LIMIT = 80;
+const IMPORT_PARSE_LIMIT = 5;
+const IMPORT_PARSE_WINDOW_MS = 60_000;
 
 function truncateExtractedText(value) {
   const text = String(value || '');
@@ -34,6 +37,18 @@ export async function POST(request) {
     const session = await auth();
     if (!session?.user?.id) {
       return Response.json({ success: false, message: 'Authentication required' }, { status: 401 });
+    }
+
+    const limitKey = `recipes:import-parse:${session.user.id}`;
+    const rate = checkRateLimit(limitKey, IMPORT_PARSE_LIMIT, IMPORT_PARSE_WINDOW_MS);
+    if (!rate.allowed) {
+      return Response.json(
+        {
+          success: false,
+          message: 'Too many import attempts. Please wait a moment and try again.'
+        },
+        { status: 429 }
+      );
     }
 
     const contentType = request.headers.get('content-type') || '';

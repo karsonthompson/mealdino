@@ -115,7 +115,8 @@ CollectionSchema.statics.createDefaultCollections = async function(userId) {
 
 // Instance method to add a recipe to this collection
 CollectionSchema.methods.addRecipe = function(recipeId) {
-  if (!this.recipes.includes(recipeId)) {
+  const exists = this.recipes.some((id) => id?.equals?.(recipeId));
+  if (!exists) {
     this.recipes.push(recipeId);
     return this.save();
   }

@@ -2,7 +2,7 @@ import NextAuth from "next-auth";
 import { MongoDBAdapter } from "@auth/mongodb-adapter";
 import clientPromise from "@/libs/mongo";
 import Resend from "next-auth/providers/resend";
-import Google from "next-auth/providers/google";
+// import Google from "next-auth/providers/google";
 
 
 const config = {
@@ -12,10 +12,10 @@ const config = {
             from: "noreply@resend.mealdino.cc",
             name: "Email",
         }),
-        Google({
-            clientId: process.env.GOOGLE_ID,
-            clientSecret: process.env.GOOGLE_SECRET,
-        }),
+        // Google({
+        //     clientId: process.env.GOOGLE_ID,
+        //     clientSecret: process.env.GOOGLE_SECRET,
+        // }),
     ],
     adapter: MongoDBAdapter(clientPromise),
     session: {
@@ -25,4 +25,3 @@ const config = {
 };
 
 export const { handlers, signIn, signOut, auth } = NextAuth(config);
-
